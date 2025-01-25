@@ -82,3 +82,39 @@ export async function POST(request: Request) {
       );
     }
   }
+
+export async function DELETE(request: Request){
+    try{
+        const session = await getServerSession(authOptions);
+
+        if (!session?.user?.id) {
+            return NextResponse.json(
+              { message: 'Unauthorized' },
+              { status: 401 }
+            );
+          }
+        
+        const { id } = await request.json();
+
+        await prisma.userSkill.delete({
+            where: {
+                id,
+                userId: session.user.id
+            }
+        });
+
+        return NextResponse.json({
+            message: "item deleted"
+        })
+    }catch(error){
+        console.error('Error deleting userSkill item:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+
+    }
+
+    
+
+  }

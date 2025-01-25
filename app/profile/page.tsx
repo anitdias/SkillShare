@@ -144,6 +144,24 @@ export default function ProfilePage() {
 
 
       }
+    
+      const handleDeleteSkill = async (id) => {
+        try{
+            const response = await fetch('/api/skills', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+              });
+
+            if(response.ok){
+                const res = await response.json();
+                setUserSkills(userSkills => userSkills.filter(object=> object.id!== id))
+            }
+        }
+        catch (error) {
+            console.error('Error deleting wishlist item:', error);
+          }
+      }
 
       if(status === 'loading' || isLoading){
         return(
@@ -239,7 +257,15 @@ export default function ProfilePage() {
                         {userSkill.validatedByManager && (
                           <span className="text-green-600 text-sm">Validated</span>
                         )}
+                        <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => handleDeleteSkill(userSkill.id)}>
+                    <LucideX className="h-4 w-4" />
+                  </Button>
                       </div>
+                      
                     ))}
                   </div>
                 </Card>
