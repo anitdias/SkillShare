@@ -125,6 +125,26 @@ export default function ProfilePage() {
         }
       };
 
+      const handleDeleteWishlist = async (id) =>{
+        try {
+            const response = await fetch('/api/wishlist', {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id }),
+            });
+      
+            if (response.ok) {
+              const item = await response.json();
+              setWishlist(wishlist => wishlist.filter(object => object.id!== id ));
+              
+            }
+          } catch (error) {
+            console.error('Error deleting wishlist item:', error);
+          }
+
+
+      }
+
       if(status === 'loading' || isLoading){
         return(
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -181,9 +201,9 @@ export default function ProfilePage() {
                   <SelectTrigger className="w-full md:w-[200px] border-2 border-gray-300 text-gray-600">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
-                  <SelectContent className="text-gray-600">
+                  <SelectContent className="text-gray-600 bg-white">
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id} className="text-gray-600">
+                      <SelectItem key={category.id} value={category.id} className="text-gray-600 hover:bg-gray-200">
                         {category.name}
                       </SelectItem>
                     ))}
@@ -254,9 +274,7 @@ export default function ProfilePage() {
                     variant="ghost"
                     size="sm"
                     className="text-red-500 hover:text-red-700"
-                    onClick={() => {
-                      // Handle remove wishlist item
-                    }}
+                    onClick={() => handleDeleteWishlist(item.id)}
                   >
                     <LucideX className="h-4 w-4" />
                   </Button>
