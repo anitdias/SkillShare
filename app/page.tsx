@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { LucideCode, LucideGraduationCap } from 'lucide-react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 export default function Home() {
   const [text, setText] = useState('');
@@ -29,7 +30,7 @@ export default function Home() {
       } else {
         clearInterval(interval);
       }
-    }, 150);
+    }, 250);
 
     return () => clearInterval(interval);
   }, []);
@@ -55,6 +56,13 @@ export default function Home() {
           <p className="text-xl md:text-2xl max-w-md mx-auto opacity-90">
             Track, showcase, and grow your skills in one place
           </p>
+          <div>
+          <DotLottieReact
+            src="https://lottie.host/d6b2a762-dba6-44f7-8e58-806895b02c30/fgRHqUrD6n.lottie"
+            loop
+            autoplay
+          />
+          </div>
         </motion.div>
       </div>
 

@@ -42,12 +42,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const { skillName } = await request.json();
+    const { skillName, categoryId } = await request.json();
 
     const wishlistItem = await prisma.skillWishlist.create({
       data: {
         userId: session.user.id,
         skillName,
+        categoryId
       },
     });
 
