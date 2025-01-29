@@ -92,8 +92,9 @@ export default function ProfilePage() {
     }
     }
 
-    const handleAddSkill = async (e:React.FormEvent) => {
-        e.preventDefault();
+    const handleAddSkill = async (e?:React.FormEvent) => {
+      if(e){
+        e.preventDefault();}
         try{
             const response = await fetch('/api/skills', {
                 method: 'POST',
@@ -105,7 +106,6 @@ export default function ProfilePage() {
                 const skill = await response.json();
                 setUserSkills([...userSkills, skill]);
                 setNewSkill({ name: '', categoryId: '' });
-                setShowAddSkillForm(false);
               }
             } catch (error) {
               console.error('Error adding skill:', error);
@@ -170,6 +170,24 @@ export default function ProfilePage() {
           }
       }
 
+      const handleAddSkillfromWishlist = async ({ name: name, categoryId: categoryId }) => {
+          try{
+              const response = await fetch('/api/skills', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: name, categoryId: categoryId }),
+                });
+          
+                if (response.ok) {
+                  const skill = await response.json();
+                  setUserSkills([...userSkills, skill]);
+                  setNewSkill({ name: '', categoryId: '' });
+                }
+              } catch (error) {
+                console.error('Error adding skill:', error);
+              }   
+      }
+
       if(status === 'loading' || isLoading){
         return(
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -179,33 +197,50 @@ export default function ProfilePage() {
       }
 
       return(
-        <div className="min-h-screen bg-[#A1D6E2] p-4 md:p-8">
+        <div className="min-h-screen bg-gray-200 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
       {/* navBar */}
       <nav className="h-16 bg-white shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
-                <div className="flex items-center justify-between">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="mr-4 text-blue"
-                >
-                    {isSidebarOpen ? <X className="text-gray-600 hover:bg-gray-200 rounded-full" size={24} /> : <Menu className="text-gray-600" size={24} />}
-                </Button>
-                <h1 className="text-xl font-bold font-mono text-white bg-[#1995AD] shadow-md rounded-lg p-1">
-                  {fulltext}
-                </h1>
-                </div>
-                <Button
-                  onClick={() => {
-                      signOut({ callbackUrl:"/" })
-                  }}
-                  className="mt-4 md:mt-0 bg-[#1995AD] hover:bg-[#157892]"
-                >
-                  {/* <LucidePlus className="mr-2 h-4 w-4" /> */}
-                  Sign Out
-                </Button>
-        </nav>
+        <div className="flex items-center">
+          {/* Sidebar Toggle Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="mr-4 text-blue"
+          >
+            {isSidebarOpen ? (
+              <X className="text-gray-600 hover:bg-gray-200 rounded-full" size={24} />
+            ) : (
+              <Menu className="text-gray-600" size={24} />
+            )}
+          </Button>
+
+          {/* Title */}
+          <h1 className="text-xl font-bold font-mono text-white bg-[#1995AD] shadow-md rounded-lg p-1">
+            {fulltext}
+          </h1>
+        </div>
+
+        {/* Search Bar */}
+        <div className="flex-grow flex items-center justify-center">
+          <input
+            type="text"
+            placeholder="Search..."
+            className="w-full max-w-md p-2 bg-white border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-gray-600"
+          />
+        </div>
+
+        {/* Sign Out Button */}
+        <Button
+          onClick={() => {
+            signOut({ callbackUrl: "/" });
+          }}
+          className="mt-4 md:mt-0 bg-[#1995AD] hover:bg-[#157892]"
+        >
+          Sign Out
+        </Button>
+      </nav>
 
         {/* Sidebar */}
         <AnimatePresence>
@@ -376,6 +411,13 @@ export default function ProfilePage() {
                   className="flex items-center justify-between bg-gray-200 p-1 rounded-xl text-gray-600 text-sm hover:bg-gray-300"
                 >
                   <span>&nbsp;{item.skillName}</span>
+                  <div className="flex justify-between space-x-2">
+                  <Button className="text-white bg-[#1995AD] hover:bg-[#157892]" onClick={() =>{
+                    handleAddSkillfromWishlist({name: item.skillName, categoryId: showWishlistForm.categoryId});
+                    handleDeleteWishlist(item.id);
+                  }}>
+                  Add to Skills
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -384,6 +426,7 @@ export default function ProfilePage() {
                   >
                     <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
                   </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -426,6 +469,12 @@ export default function ProfilePage() {
                     className="flex items-center justify-between bg-gray-200 p-1 rounded-xl text-gray-600 text-sm hover:bg-gray-300"
                   >
                     <span>&nbsp;{item.skill.name}</span>
+                  <div>
+                    <Button className="bg-[#1995AD] hover:bg-[#157892] text-white" onClick={() => {
+                      router.push(`/roadmap?skillName=${item.skill.name}`)
+                    }}>
+                    Generate Roadmap
+                  </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -434,6 +483,7 @@ export default function ProfilePage() {
                     >
                       <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
                     </Button>
+                    </div>
                   </div>
                 ))}
               </div>
