@@ -85,7 +85,7 @@ export default function RoadmapForm() {
         } else {
           clearInterval(interval);
         }
-      }, 50); // Adjust delay between steps here (500ms)
+      }, 100); // Adjust delay between steps here (500ms)
       return () => clearInterval(interval);
     }
   }, [roadmap]);
@@ -205,7 +205,7 @@ export default function RoadmapForm() {
           <div className="mt-4 text-gray-600">
             {error && <p className="text-red-500">{error}</p>}
             {visibleRoadmap.map((item, index) => (
-              <p key={index} className="text-gray-700">
+              <p key={index} className="text-gray-700 text-lg">
                 {item}
               </p>
             ))}

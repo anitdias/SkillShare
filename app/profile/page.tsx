@@ -39,6 +39,11 @@ interface WishlistItem {
     categoryId: string;
 }
 
+interface SearchUser {
+  id: string;
+  name: string;
+}
+
 export default function ProfilePage() {
     const {data: session, status} = useSession();
     const router = useRouter();
@@ -51,9 +56,11 @@ export default function ProfilePage() {
     const [newWishlistItem, setNewWishlistItem] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [searchUsers, setSearchUsers] = useState<SearchUser[]>([])
 
     const categories = [
-        {id: '1', name: 'Professional'},
+        {id: '1', name: 'Professional & Technical'},
         {id: '2', name: 'Creative'},
         { id: '3', name: 'Life & Physical' },
         { id: '4', name: 'Social & Interpersonal' },
@@ -188,6 +195,29 @@ export default function ProfilePage() {
               }   
       }
 
+      const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        
+        const inputValue = e.target.value;
+        setQuery(inputValue);
+        if(inputValue!== ''){
+        try{
+          const res = await fetch('/api/search',{
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: inputValue }),
+          })
+  
+          if(res.ok){
+              const users = await res.json()
+              setSearchUsers(users);
+          }
+      }
+      catch(error){
+          console.error('Error while fetching user data:', error);
+      }
+    }
+      };
+
       if(status === 'loading' || isLoading){
         return(
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -227,8 +257,26 @@ export default function ProfilePage() {
           <input
             type="text"
             placeholder="Search..."
+            value={query}
+            onChange={handleInputChange}
             className="w-full max-w-md p-2 bg-white border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-gray-600"
           />
+
+        {searchUsers.length > 0 && query && (
+              <div className="absolute top-12 w-full max-w-md bg-white border-gray-300 border-2 rounded-md shadow-lg z-30">
+                {searchUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="p-2 hover:bg-gray-100 cursor-pointer text-gray-700"
+                    onClick={() => {
+                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)
+                    }}
+                  >
+                    {user.name}
+                  </div>
+                ))}
+              </div>
+            )}
         </div>
 
         {/* Sign Out Button */}
@@ -412,6 +460,11 @@ export default function ProfilePage() {
                 >
                   <span>&nbsp;{item.skillName}</span>
                   <div className="flex justify-between space-x-2">
+                  <Button className="bg-[#1995AD] hover:bg-[#157892] text-white" onClick={() => {
+                      router.push(`/roadmap?skillName=${item.skillName}`)
+                    }}>
+                    Generate Roadmap
+                  </Button>
                   <Button className="text-white bg-[#1995AD] hover:bg-[#157892]" onClick={() =>{
                     handleAddSkillfromWishlist({name: item.skillName, categoryId: showWishlistForm.categoryId});
                     handleDeleteWishlist(item.id);
@@ -470,11 +523,7 @@ export default function ProfilePage() {
                   >
                     <span>&nbsp;{item.skill.name}</span>
                   <div>
-                    <Button className="bg-[#1995AD] hover:bg-[#157892] text-white" onClick={() => {
-                      router.push(`/roadmap?skillName=${item.skill.name}`)
-                    }}>
-                    Generate Roadmap
-                  </Button>
+                    
                     <Button
                       variant="ghost"
                       size="sm"
