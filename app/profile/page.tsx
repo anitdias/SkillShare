@@ -463,7 +463,7 @@ export default function ProfilePage() {
                   <Button className="bg-[#1995AD] hover:bg-[#157892] text-white" onClick={() => {
                       router.push(`/roadmap?skillName=${item.skillName}`)
                     }}>
-                    Generate Roadmap
+                    Roadmap
                   </Button>
                   <Button className="text-white bg-[#1995AD] hover:bg-[#157892]" onClick={() =>{
                     handleAddSkillfromWishlist({name: item.skillName, categoryId: showWishlistForm.categoryId});

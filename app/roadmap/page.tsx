@@ -47,6 +47,40 @@ export default function RoadmapForm() {
           }
       }, [status,router])
 
+  useEffect(() => {
+
+    setRoadmap([]);
+    setVisibleRoadmap([]);
+
+    if (skillName) {
+      getRoadmap();
+    }
+  }, [skillName, level]);
+
+  
+
+  const getRoadmap = async () => {
+        try {
+          const response = await fetch("/api/get-roadmap", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skillName, level }),
+          });
+      
+          if (!response.ok) {
+            const errorData = await response.json();
+            setError(errorData.error || "Failed to save the roadmap.");
+            return;
+          }
+      
+          const data = await response.json();
+          setRoadmap(data.roadmap || []);
+        } catch (err) {
+          console.error("Error saving roadmap:", err);
+          setError("Failed to save the roadmap. Please try again.");
+        }
+      };
+
 
   const generateRoadmap = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +108,34 @@ export default function RoadmapForm() {
       setError("Failed to fetch the roadmap. Please try again.");
     }
   };
+
+  const saveRoadmap = async () => {
+    if (!roadmap || roadmap.length === 0) {
+      setError("No roadmap to save. Please generate a roadmap first.");
+      return;
+    }
+  
+    try {
+      const response = await fetch("/api/save-roadmap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skillName, level, roadmap }),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to save the roadmap.");
+        return;
+      }
+  
+      const data = await response.json();
+    } catch (err) {
+      console.error("Error saving roadmap:", err);
+      setError("Failed to save the roadmap. Please try again.");
+    }
+  };
+
+
 
   useEffect(() => {
     if (roadmap.length > 0) {
@@ -196,9 +258,18 @@ export default function RoadmapForm() {
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
           </select>
-          <button type="submit" className="bg-blue-500 text-white p-2 rounded">
+          <div className='space-x-10'>
+          <button type="submit" className="bg-blue-500 space-x-2 text-white p-2 rounded">
             Generate Roadmap
           </button>
+          <button
+            type="button"
+            onClick={saveRoadmap}
+            className="bg-blue-500 text-white p-2 rounded"
+          >
+            Save Roadmap
+          </button>
+          </div>
         </form>
         <div className="mt-4 text-gray-600 bg-gray-200 p-4 rounded-xl">
           {error && <p className="text-red-500">{error}</p>}
