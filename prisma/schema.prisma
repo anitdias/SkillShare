@@ -116,7 +116,7 @@ model Roadmap {
   userId    String   // Store user ID (e.g., Auth0 or NextAuth)
   skillName String
   level     String
-  roadmap   String[] // Updated to store an array of strings
+  roadmap   Json 
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

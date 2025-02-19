@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       }
   
       let { skillName, level, roadmap } = await request.json();
+      console.log(skillName, level, roadmap);
   
       // Normalize skillName: convert to lowercase and remove spaces
       skillName = skillName.toLowerCase().replace(/\s+/g, "");

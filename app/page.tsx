@@ -38,7 +38,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Section */}
-      <div className="w-full md:w-1/2 bg-[#1995AD] flex flex-col items-center justify-center p-8 text-white">
+      <div className="w-full md:w-1/2 bg-[#222222] flex flex-col items-center justify-center p-8 text-white">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ export default function Home() {
       </div>
 
       {/* Right Section */}
-      <div className="w-full md:w-1/2 bg-[#A1D6E2] flex items-center justify-center p-8">
+      <div className="w-full md:w-1/2 bg-[#3b3b3b] flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -75,7 +75,7 @@ export default function Home() {
           className="w-full max-w-md space-y-6"
         >
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Get Started Today
             </h2>
             {/* <p className="text-gray-600">
@@ -88,7 +88,7 @@ export default function Home() {
               <Button
                 variant="default"
                 size="lg"
-                className="w-full bg-[#1995AD] hover:bg-[#157892] text-lg h-12"
+                className="w-full bg-[#636363] hover:bg-[#222222] text-lg h-12"
               >
                 Sign Up
               </Button>
@@ -97,14 +97,14 @@ export default function Home() {
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full border-[#1995AD] text-[#1995AD] hover:bg-[#1995AD] hover:text-white text-lg h-12"
+                className="w-full border-[#636363] text-white hover:bg-[#222222] hover:text-white text-lg h-12"
               >
                 Login
               </Button>
             </Link>
           </div>
 
-          <div className="text-center text-sm text-gray-600 mt-8">
+          <div className="text-center text-sm text-white mt-8">
             <p>
               By signing up, you agree to our{' '}
               <Link href="/terms" className="text-[#1995AD] hover:underline">

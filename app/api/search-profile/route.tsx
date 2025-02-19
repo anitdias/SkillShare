@@ -6,31 +6,48 @@ import prisma from "@/lib/prisma";
 
 
 export async function POST(request: Request) {
-    try{
-        const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Internal Server Error" },
+        { status: 500 }
+      );
+    }
 
-        if(!session?.user?.id){
-            return NextResponse.json(
-                { message: 'Internal Server Error'},
-                {status: 500}
-            );
-        }
+    const { searchedUserId } = await request.json();
 
-        const { searchedUserId } = await request.json();
-        
-        const userSkills = await prisma.userSkill.findMany({
-            where: {userId: searchedUserId},
-            include: {skill: true}
-        });
+    // Fetch user email and image
+    const user = await prisma.user.findUnique({
+      where: { id: searchedUserId },
+      select: { email: true, image: true },
+    });
 
-        return NextResponse.json(userSkills);
+    if (!user) {
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
+    }
 
-   }catch (error) {
-    console.error('Error fetching skills:', error);
+    // Fetch user skills separately
+    const userSkills = await prisma.userSkill.findMany({
+      where: { userId: searchedUserId },
+      include: { skill: true },
+    });
+
+    return NextResponse.json({
+      email: user.email,
+      image: user.image ?? null, // Ensure null if image is not available
+      skills: userSkills,
+    });
+
+  } catch (error) {
+    console.error("Error fetching user details:", error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: "Internal server error" },
       { status: 500 }
     );
-  } 
+  }
 }

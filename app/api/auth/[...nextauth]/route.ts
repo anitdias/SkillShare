@@ -57,7 +57,7 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.name = user.name;
-        token.image = user.image;
+        token.image = user.image || user.picture;
       }
       return token;
     },

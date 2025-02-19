@@ -50,11 +50,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#A1D6E2] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 bg-white shadow-xl rounded-xl">
+    <div className="min-h-screen bg-[#222222] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-8 space-y-6 bg-[#3b3b3b] border-[#3b3b3b] shadow-xl rounded-xl">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-[#1995AD] mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Sign in to continue to SkillShare</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+          <p className="text-white">Sign in to continue to SkillShare</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -65,7 +65,7 @@ export default function LoginPage() {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10 text-black"
+                className="pl-10 text-white"
                 required
               />
               <LucideMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -79,7 +79,7 @@ export default function LoginPage() {
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 text-black"
+                className="pl-10 text-white"
                 required
               />
               <LucideLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -90,7 +90,7 @@ export default function LoginPage() {
 
           <Button
             type="submit"
-            className="w-full bg-[#1995AD] hover:bg-[#157892]"
+            className="w-full bg-[#636363] hover:bg-[#222222]"
             disabled={isLoading}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
@@ -102,7 +102,7 @@ export default function LoginPage() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">Or continue with</span>
+            <span className="bg-[#636363] px-2 text-black">Or continue with</span>
           </div>
         </div>
 
@@ -110,14 +110,14 @@ export default function LoginPage() {
           <Button
             variant="outline"
             onClick={() => signIn('google', { callbackUrl: '/profile' })}
-            className="w-full flex items-center justify-center text-black"
+            className="w-full flex items-center justify-center text-white"
           >
             <FcGoogle className="mr-2 h-5 w-5" /> {/* Google Icon */}
             Sign-Up with Google
           </Button>
         </div>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-white">
           Dont have an account?{' '}
           <Link href="/signup" className="text-[#1995AD] hover:underline">
             Sign up

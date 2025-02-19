@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Roadmap" ALTER COLUMN "roadmap" SET NOT NULL,
+ALTER COLUMN "roadmap" SET DATA TYPE TEXT;

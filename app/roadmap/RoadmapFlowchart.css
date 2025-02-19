@@ -1,0 +1,121 @@
+/* Flowchart container */
+.flowchart {
+  width: 100%;
+  max-width: 750px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 50px;
+  position: relative;
+}
+
+/* Center vertical line */
+.flowchart::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 8px;
+  background: #00FFFF;
+  transform: translateX(-50%);
+}
+
+/* Flowchart node - Alternates between left and right */
+.flowchart-node {
+  background: linear-gradient(to right, #0a66c2, #5aa9e6); /* Deep to light blue */
+  color: white; /* White text */
+  padding: 20px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 320px;
+  text-align: center;
+  position: relative;
+  border: 1px solid #1e4e8c; /* Slightly darker blue border for contrast */
+}
+
+
+
+/* Alternating layout for S shape */
+.flowchart-node:nth-child(odd) {
+  align-self: flex-start;
+  transform: translateX(-10%);
+}
+
+.flowchart-node:nth-child(even) {
+  align-self: flex-end;
+  transform: translateX(10%);
+}
+
+/* Connectors to center line */
+.flowchart-node::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 85px;
+  height: 4px;
+  background: #00FFFF;
+  transition: width 0.3s ease;
+}
+
+/* Odd nodes (Left side) - Connector to the right */
+.flowchart-node:nth-child(odd)::after {
+  right: -85px;
+}
+
+/* Even nodes (Right side) - Connector to the left */
+.flowchart-node:nth-child(even)::after {
+  left: -85px;
+}
+
+/* Reduce connector width on hover */
+.flowchart-node:hover::after {
+  width: 0px;
+}
+
+/* Remove connector line when node is expanded */
+.flowchart-node.expanded::after {
+  display: none;
+}
+
+/* Expanded node styles */
+.flowchart-node.expanded {
+  background: linear-gradient(to right, #0d5ca3, #4f9bd4); /* Darker blue to soft blue */
+  padding: 30px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 850px;
+  text-align: left;
+  transform: translateY(-5px) scale(1.05);
+}
+
+/* Node details */
+.node-details {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Hover effects */
+.flowchart-node:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(to right, #0d5ca3, #4f9bd4); /* Richer blue on hover */
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
