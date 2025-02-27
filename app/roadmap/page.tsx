@@ -148,7 +148,7 @@ export default function RoadmapForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444] text-white">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] text-white">
       <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
         <div className="flex items-center">
           <Button
@@ -164,10 +164,10 @@ export default function RoadmapForm() {
             )}
           </Button>
 
-          <h1 className="text-xl font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg p-1">
-            {fulltext}
-          </h1>
-        </div>
+          <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+              {fulltext}
+            </h1>
+          </div>
 
         {/* Search Bar */}
         <div className="flex-grow flex items-center justify-center">
@@ -200,7 +200,7 @@ export default function RoadmapForm() {
           onClick={() => {
             router.push('/profile')
           }}
-          className="mr-2 mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
+          className="bg-[#636363] hover:bg-[#222222] text-sm ml-2 sm:text-md px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-md mr-2"
         >
           Return to Profile
         </Button>
@@ -208,10 +208,11 @@ export default function RoadmapForm() {
           onClick={() => {
             signOut({ callbackUrl: "/" });
           }}
-          className="mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
+          className="hidden md:block mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
         >
           Sign Out
         </Button>
+
       </nav>
 
       <AnimatePresence>
@@ -288,7 +289,7 @@ export default function RoadmapForm() {
           </div>
         </form>
         <hr className="text-gray-600 mt-3"/>
-        <div className="mt-4 text-white bg-gradient-to-r from-[#222222] via-[#343434] to-[#222222] p-4 rounded-xl">
+        <div className="mt-4 text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] p-4 rounded-xl">
           {error && <p className="text-red-500">{error}</p>}
           {roadmap && roadmap.roadmap?.steps && (
             <div className="flowchart">

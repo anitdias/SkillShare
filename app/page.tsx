@@ -38,7 +38,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Section */}
-      <div className="w-full md:w-1/2 bg-[#222222] flex flex-col items-center justify-center p-8 text-white">
+      <div className="w-full md:w-1/2 bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] flex flex-col items-center justify-center p-8 text-white">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ export default function Home() {
       </div>
 
       {/* Right Section */}
-      <div className="w-full md:w-1/2 bg-[#3b3b3b] flex items-center justify-center p-8">
+      <div className="w-full md:w-1/2 bg-gradient-to-br from-[#3b3b3b] via-[#2c2c2c] to-[#1a1a1a] flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}

@@ -6,30 +6,39 @@ import prisma from "@/lib/prisma";
 
 
 export async function GET() {
-    try{
-        const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-        if(!session?.user?.id){
-            return NextResponse.json(
-                { message: 'Internal Server Error'},
-                {status: 500}
-            );
-        }
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-        const userSkills = await prisma.userSkill.findMany({
-            where: {userId: session.user.id},
-            include: {skill: true}
-        });
+    // Fetch user skills
+    const userSkills = await prisma.userSkill.findMany({
+      where: { userId: session.user.id },
+      include: { skill: true },
+    });
 
-        return NextResponse.json(userSkills);
+    // Fetch user recommendation
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { recommendation: true },
+    });
 
-   }catch (error) {
-    console.error('Error fetching skills:', error);
+    return NextResponse.json({
+      skills: userSkills,
+      recommendation: user?.recommendation || null, // Ensure recommendation is always included
+    });
+  } catch (error) {
+    console.error("Error fetching data:", error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: "Internal server error" },
       { status: 500 }
     );
-  } 
+  }
 }
 
 export async function POST(request: Request) {

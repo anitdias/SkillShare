@@ -60,6 +60,11 @@ export default function ProfilePage() {
     const [query, setQuery] = useState('');
     const [searchUsers, setSearchUsers] = useState<SearchUser[]>([])
     const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
+    const [recommendation, setRecommendation] = useState<{ skills: string[]; summary: string }>({
+      skills: [],
+      summary: "",
+    });
+    
 
     const categorySkills = userSkills.filter(
       (us) => us.categoryId === selectedCategory
@@ -77,27 +82,30 @@ export default function ProfilePage() {
     }, [status,router])
 
     const fetchUserData = async () => {
-        try{
+      try {
         const [skillRes, wishlistRes] = await Promise.all([
-            fetch('/api/skills'),
-            fetch('/api/wishlist')
-        ])
-
-        if(skillRes.ok && wishlistRes.ok){
-            const [skills, wishlist] = await Promise.all([
-                skillRes.json(),
-                wishlistRes.json()
-            ])
-            setUserSkills(skills);
-            setWishlist(wishlist);
+          fetch("/api/skills"),
+          fetch("/api/wishlist"),
+        ]);
+    
+        if (skillRes.ok && wishlistRes.ok) {
+          const [skillData, wishlist] = await Promise.all([
+            skillRes.json(),
+            wishlistRes.json(),
+          ]);
+    
+          setUserSkills(skillData.skills); // Extract skills from API response
+          const recommendation = JSON.parse(skillData.recommendation);
+          setRecommendation(recommendation); // Set recommendation
+          setWishlist(wishlist);
         }
-    }
-    catch(error){
-        console.error('Error while fetching user data:', error);
-    }finally{
+      } catch (error) {
+        console.error("Error while fetching user data:", error);
+      } finally {
         setIsLoading(false);
-    }
-    }
+      }
+    };
+    
 
     const handleAddSkill = async (e?:React.FormEvent) => {
       if(e){
@@ -217,82 +225,131 @@ export default function ProfilePage() {
       }
     }
       };
-
-      
-
     
-
+      const fetchRecommendation = async () => {
+        try {
+          // Extract skill names from userSkills and wishlist
+          const skills = userSkills.map((skill) => skill.skill.name);
+          const wishlistSkills = wishlist.map((item) => item.skillName);
+      
+          const response = await fetch("/api/generate-recommendation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skills, wishlistSkills }),
+          });
+      
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error fetching recommendation:", errorData);
+            return;
+          }
+      
+          const data = await response.json();
+          const recommendation = JSON.parse(data.recommendation);
+          setRecommendation(recommendation);
+        } catch (err) {
+          console.error("Error fetching recommendation:", err);
+        }
+      };
+      
+    
       if(status === 'loading' || isLoading){
         return(
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <div className="text-xl text-gray-600">Loading...</div>
-            </div>
+          <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444]">
+          {/* Animated Background Overlay */}
+          <motion.div
+            className="absolute inset-0 opacity-20"
+            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+            style={{
+              backgroundImage: "radial-gradient(circle at center, #3b3b3b 0%, transparent 80%)",
+              backgroundSize: "200% 200%",
+            }}
+          />
+
+          {/* Glassmorphic Loading Container */}
+          <div className="relative p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
+            {/* Spinner Animation */}
+            <motion.div
+              className="w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
+
+            {/* Loading Text (Fixed easing function) */}
+            <motion.p
+              className="mt-4 text-lg font-semibold text-white/90 tracking-wide"
+              animate={{ opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} // Fixed this!
+            >
+              Loading, please wait...
+            </motion.p>
+          </div>
+        </div>
         );
       }
 
       return(
-        <div className="min-h-screen bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444] p-4 md:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
       {/* navBar */}
-      <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
-        <div className="flex items-center">
-          {/* Sidebar Toggle Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="mr-4 text-white"
-          >
-            {isSidebarOpen ? (
-              <X className="text-white hover:bg-gray-200 rounded-full" size={24} />
-            ) : (
-              <Menu className="text-white" size={24} />
-            )}
-          </Button>
+      <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+          {/* Left Section - Sidebar & Title */}
+          <div className="flex items-center gap-3">
+            {/* Sidebar Toggle Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="text-white"
+            >
+              {isSidebarOpen ? (
+                <X className="text-white hover:bg-gray-200 rounded-full" size={24} />
+              ) : (
+                <Menu className="text-white" size={24} />
+              )}
+            </Button>
 
-          {/* Title */}
-          <h1 className="text-xl font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg p-1">
-            {fulltext}
-          </h1>
-        </div>
+            {/* Title */}
+            <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+              {fulltext}
+            </h1>
+          </div>
 
-        {/* Search Bar */}
-        <div className="flex-grow flex items-center justify-center">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={query}
-            onChange={handleInputChange}
-            className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
-          />
-
-        {searchUsers.length > 0 && query && (
+          {/* Center Section - Search Bar */}
+          <div className="text-sm mr-2 sm:flex flex-grow text-md items-center justify-center relative">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={query}
+              onChange={handleInputChange}
+              className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
+            />
+            
+            {searchUsers.length > 0 && query && (
               <div className="absolute top-12 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
                 {searchUsers.map((user) => (
                   <div
                     key={user.id}
                     className="p-2 hover:bg-gray-400 cursor-pointer text-white"
-                    onClick={() => {
-                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)
-                    }}
+                    onClick={() => router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)}
                   >
                     {user.name}
                   </div>
                 ))}
               </div>
             )}
-        </div>
+          </div>
 
-        {/* Sign Out Button */}
-        <Button
-          onClick={() => {
-            signOut({ callbackUrl: "/" });
-          }}
-          className="mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
-        >
-          Sign Out
-        </Button>
-      </nav>
+          {/* Right Section - Sign Out Button */}
+          <Button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="bg-[#636363] hover:bg-[#222222] text-sm sm:text-md px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-md"
+          >
+            Sign Out
+          </Button>
+        </nav>
+
 
         {/* Sidebar */}
         <AnimatePresence>
@@ -330,9 +387,9 @@ export default function ProfilePage() {
           )}
       </AnimatePresence>
       
-      <div className="flex flex-col md:flex-row gap-6 mt-12">
+      <div className="mt-14 sm:flex flex-col md:flex-row gap-6 mt-12">
           {/* Profile Card*/}
-          <Card className="w-full md:w-2/3 bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
+          <Card className="w-full bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
             {/* Cover Photo */}
             <div className="relative h-32 bg-gray-300">
               <img
@@ -350,7 +407,7 @@ export default function ProfilePage() {
                   alt="Profile"
                   width={140}
                   height={140}
-                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md"
+                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full shadow-md"
                 />
               </div>
             </div>
@@ -374,12 +431,6 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
-          </Card>
-
-          {/* Skill Overview Card*/}
-          <Card className="w-full md:w-1/3 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center">
-            <h3 className="text-white text-lg font-bold font-mono mb-4">Skills Overview</h3>
-            <RadialGraph userSkills={userSkills} />
           </Card>
         </div>
 
@@ -421,126 +472,165 @@ export default function ProfilePage() {
           <div className="flex border-b border-gray-600">
             {categories.map((category) => (
               <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex-1 text-center py-2 text-white font-medium transition-all ${
-                  selectedCategory === category.id
-                    ? "border-b-4 border-blue-500 text-blue-400"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                {category.name}
-              </button>
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`flex-1 text-center text-white py-2 font-medium transition-all text-sm sm:text-base ${
+                selectedCategory === category.id
+                  ? "border-b-4 border-blue-500 text-blue-400"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              {category.name}
+            </button>            
             ))}
           </div>
 
-          {/* Skills List */}
-          <div className="mt-4 space-y-3 px-2">
-            <div className="flex item-center justify-between space-x-2">
-              <h3 className="font-bold font-mono text-2xl text-white">Skills</h3>
-              <Button
-                    onClick={() => setShowAddSkillForm({set: true, categoryId: selectedCategory})}
-                    className="bg-[#2d2d2d] hover:bg-gray-700 w-[50px] h-[38px]"
-                  > 
-                    <LucidePlus className="h-4 w-4" />
-              </Button>
-            </div>
-            <hr className="text-gray-600"/>
-            {categorySkills.length > 0 ? (
-              categorySkills.slice(0, 3).map((userSkill) => (
-                <div
-                  key={userSkill.id}
-                  className="flex items-center justify-between bg-[#2d2d2d] p-3 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
+          {/* Skills List & Overview */}
+          <div className="mt-4 flex flex-col md:flex-row gap-6 px-2">
+            {/* Skills List */}
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center justify-between space-x-2">
+                <h3 className="font-bold font-mono text-2xl text-white">Skills</h3>
+                <Button
+                  onClick={() => setShowAddSkillForm({ set: true, categoryId: selectedCategory })}
+                  className="bg-[#2d2d2d] hover:bg-gray-700 w-[50px] h-[38px]"
                 >
-                  <span className="text-white text-sm">{userSkill.skill.name}</span>
-                  <div className="flex items-center space-x-3">
-                    {userSkill.validatedByManager && (
-                      <span className="text-green-500 text-xs font-medium">✔ Validated</span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-gray-400 hover:text-red-500"
-                      onClick={() => handleDeleteSkill(userSkill.id)}
+                  <LucidePlus className="h-4 w-4" />
+                </Button>
+              </div>
+              <hr className="text-gray-600" />
+              {categorySkills.length > 0 ? (
+                <div className="flex flex-wrap gap-3">
+                  {categorySkills.map((userSkill) => (
+                    <div
+                      key={userSkill.id}
+                      className="flex items-center bg-[#2d2d2d] px-3 py-2 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
                     >
-                      <LucideX className="h-4 w-4" />
-                    </Button>
-                  </div>
+                      <span className="text-white text-md whitespace-nowrap">{userSkill.skill.name}</span>
+                      <div className="flex items-center ml-2">
+                        {userSkill.validatedByManager && (
+                          <span className="text-green-500 text-xs font-medium">✔</span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-gray-400 hover:text-red-500 ml-2"
+                          onClick={() => handleDeleteSkill(userSkill.id)}
+                        >
+                          <LucideX className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-400 text-center">No skills added yet.</p>
-            )}
-          </div>
+              ) : (
+                <p className="text-gray-400 text-center">No skills added yet.</p>
+              )}
+            </div>
 
-          {/* Action Buttons */}
-          <div className="mt-4 px-2">
-            {/* <Button
-              onClick={() =>
-                setShowWishlistForm({ set: true, categoryId: selectedCategory })
-              }
-              className="bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm"
-            >
-              Future Skills
-            </Button> */}
-            <Button
-              onClick={() => setShowViewMore({ set: true, categoryId: selectedCategory })}
-              className="bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-md"
-            >
-              View More
-            </Button>
+            {/* Skill Overview Card */}
+            <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center">
+              <h3 className="text-white text-lg font-bold font-mono mb-4">Skills Overview</h3>
+              <RadialGraph userSkills={userSkills} />
+            </Card>
           </div>
         </div>
+
+
+
 
         {/* Future Skills Section */}
         <div className="mt-6 space-y-3 px-2">
-          <div className="flex items-center justify-between space-x-2">
-            <h3 className="font-bold font-mono text-2xl text-white">Future Skills</h3>
-            <Button
-              onClick={() => setShowWishlistForm({ set: true, categoryId: selectedCategory })}
-              className="bg-[#2d2d2d] hover:bg-gray-700 w-[50px] h-[38px]"
-            >
-              <LucidePlus className="h-4 w-4" />
-            </Button>
-          </div>
-          <hr className="text-gray-600"/>
-
-          {wishlist.length > 0 ? (
-            wishlist
-            .filter((item) =>  item.categoryId === selectedCategory)
-            .map((skill) => (
-              <div
-                key={skill.id}
-                className="flex items-center justify-between bg-[#2d2d2d] p-3 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
+        <div className="mt-4 flex flex-col md:flex-row gap-6 px-2">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center justify-between space-x-2">
+              <h3 className="font-bold font-mono text-2xl text-white">Future Skills</h3>
+              <Button
+                onClick={() => setShowWishlistForm({ set: true, categoryId: selectedCategory })}
+                className="bg-[#2d2d2d] hover:bg-gray-700 w-[50px] h-[38px]"
               >
-                <span className="text-white text-sm">{skill.skillName}</span>
-                <div className="flex justify-between space-x-2">
-                  <Button className="bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white" onClick={() => {
-                      router.push(`/roadmap?skillName=${skill.skillName}`)
+                <LucidePlus className="h-4 w-4" />
+              </Button>
+            </div>
+            <hr className="text-gray-600"/>
+
+            {wishlist.length > 0 ? (
+              wishlist
+              .filter((item) =>  item.categoryId === selectedCategory)
+              .map((skill) => (
+                <div
+                  key={skill.id}
+                  className="flex items-center justify-between bg-[#2d2d2d] p-3 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
+                >
+                  <span className="text-white text-md">{skill.skillName}</span>
+                  <div className="flex justify-between space-x-2">
+                    <Button className="bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white" onClick={() => {
+                        router.push(`/roadmap?skillName=${skill.skillName}`)
+                      }}>
+                      Roadmap
+                    </Button>
+                    <Button className="text-white bg-[#2d2d2d] hover:bg-[#1a1a1a]" onClick={() =>{
+                      handleAddSkillfromWishlist({name: skill.skillName, categoryId: selectedCategory});
+                      handleDeleteWishlist(skill.id);
                     }}>
-                    Roadmap
-                  </Button>
-                  <Button className="text-white bg-[#2d2d2d] hover:bg-[#1a1a1a]" onClick={() =>{
-                    handleAddSkillfromWishlist({name: skill.skillName, categoryId: selectedCategory});
-                    handleDeleteWishlist(skill.id);
-                  }}>
-                  Add to Skills
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => handleDeleteWishlist(skill.id)}
-                  >
-                    <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
-                  </Button>
+                    Add to Skills
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => handleDeleteWishlist(skill.id)}
+                    >
+                      <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
+                    </Button>
+                    </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400 text-center">No future skills added yet.</p>
+            )}
+          </div>
+          <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center relative">
+            {/* Title */}
+            <h3 className="text-white text-xl font-bold font-mono text-left sm:text-center w-full ml-0">
+              Recommendations
+            </h3>
+
+            {/* Generate Button */}
+            <Button
+              onClick={fetchRecommendation}
+              className="border-2 border-[#2d2d2d] hover:bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-md absolute top-0 right-0 m-2"
+            >
+              {recommendation.skills.length > 0 ? "Re-Generate" : "Generate"}
+            </Button>
+            
+            {/* Recommendations List */}
+            <div className="mt-4 w-full px-4">
+              {recommendation.skills.length > 0 ? (
+                <div>
+                  <div className="flex flex-wrap gap-2">
+                    {recommendation.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="bg-[#2d2d2d] px-4 py-2 rounded-lg shadow-md text-white text-md whitespace-nowrap"
+                      >
+                        {skill}
+                      </span>
+                    ))}
                   </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-400 text-center">No future skills added yet.</p>
-          )}
+                  <hr className="mt-4 border-gray-600" />
+                  <p className="text-white mt-4 text-sm leading-relaxed">{recommendation.summary}</p>
+                </div>
+              ) : (
+                <div className="text-center bg-[#2d2d2d] p-4 rounded-xl shadow-md border border-[#3b3b3b]">
+                  <p className="text-gray-400 text-md">No recommendations yet. Click "Generate" to get started.</p>
+                </div>
+              )}
+            </div>
+          </Card>
+
         </div>
+      </div>
 
 
 
@@ -666,6 +756,8 @@ export default function ProfilePage() {
     </div>
 
     </div>
+    
+    
 
         ) 
 

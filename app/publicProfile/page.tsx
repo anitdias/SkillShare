@@ -261,7 +261,7 @@ export default function ProfilePage() {
 
         <div className="flex flex-col md:flex-row gap-6 mt-12">
                   {/* Profile Card - Takes 2/3rd of the width */}
-                  <Card className="w-full md:w-2/3 bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
+                  <Card className="w-full bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
                     {/* Cover Photo */}
                     <div className="relative h-32 bg-gray-300">
                       <img
@@ -279,7 +279,7 @@ export default function ProfilePage() {
                           alt="Profile"
                           width={140}
                           height={140}
-                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full shadow-md"
                         />
                       </div>
                     </div>
@@ -304,12 +304,6 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </Card>
-        
-                  {/* Skill Overview Card - Takes 1/3rd of the width */}
-                  <Card className="w-full md:w-1/3 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center">
-                    <h3 className="text-white text-lg font-bold font-mono mb-4">Skills Overview</h3>
-                    <RadialGraph userSkills={searchedUserSkills} />
-                  </Card>
                 </div>
 
         {/* Skills Grid */}
@@ -331,74 +325,44 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Skills List */}
-          <div className="mt-4 space-y-3 px-2">
-            <div className="flex item-center justify-between space-x-2">
-              <h3 className="font-bold font-mono text-2xl text-white">Skills</h3>
-            </div>
-            <hr className="text-gray-600"/>
-            {categorySkills.length > 0 ? (
-              categorySkills.map((userSkill) => (
-                <div
-                  key={userSkill.id}
-                  className="flex items-center justify-between bg-[#2d2d2d] p-3 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
-                >
-                  <span className="text-white text-sm">{userSkill.skill.name}</span>
-                  <div className="flex items-center space-x-3">
-                    {userSkill.validatedByManager && (
-                      <span className="text-green-500 text-xs font-medium">✔ Validated</span>
-                    )}
-                  </div>
+          {/* Skills List & Overview */}
+            <div className="mt-4 flex flex-col md:flex-row gap-6 px-2">
+              {/* Skills List */}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between space-x-2">
+                  <h3 className="font-bold font-mono text-2xl text-white">Skills</h3>
+
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-400 text-center">No skills added yet.</p>
-            )}
-          </div>
-
-
-
-          {/* view more skill
-          {showViewMore.set && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-30">
-            <Card className="relative p-4 bg-white w-[650px] h-[650px] flex flex-col justify-baseline rounded-lg shadow-lg">
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-1 text-gray-600 hover:text-gray-800"
-                onClick={() => setShowViewMore({set: false, categoryId: ''})} // Close the form
-              >
-                <LucideX className="h-5 w-5 hover:bg-gray-200 rounded-full" />
-              </Button>
-              <h2 className="text-xl font-semibold font-mono mb-4 text-gray-600">Skills</h2>
-              <div className="space-y-2 overflow-auto">
-                {searchedUserSkills
-                .filter((item) =>  item.categoryId === showViewMore.categoryId)
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between bg-gray-200 p-2 rounded-xl text-gray-600 text-md hover:bg-gray-300"
-                  >
-                    <span>&nbsp;{item.skill.name}</span>
+                <hr className="text-gray-600" />
+                {categorySkills.length > 0 ? (
+                  <div className="flex flex-wrap gap-3">
+                    {categorySkills.map((userSkill) => (
+                      <div
+                        key={userSkill.id}
+                        className="flex items-center bg-[#2d2d2d] px-3 py-2 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
+                      >
+                        <span className="text-white text-md whitespace-nowrap">{userSkill.skill.name}</span>
+                        <div className="flex items-center ml-2">
+                          {userSkill.validatedByManager && (
+                            <span className="text-green-500 text-xs font-medium">✔</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className="text-gray-400 text-center">No skills added yet.</p>
+                )}
               </div>
-            </Card>
+  
+              {/* Skill Overview Card */}
+              <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center">
+                <h3 className="text-white text-lg font-bold font-mono mb-4">Skills Overview</h3>
+                <RadialGraph userSkills={searchedUserSkills} />
+              </Card>
             </div>
-            )} */}
-
-          
-
+          </div>
+      </div>
     </div>
-    </div>
-    </div>
-
-    
-
-        ) 
-
-
-
-
-
-      
+  ) 
 }

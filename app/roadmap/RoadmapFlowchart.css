@@ -10,17 +10,25 @@
   position: relative;
 }
 
-/* Center vertical line */
+/* Wavy road-like center vertical line */
 .flowchart::before {
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
   left: 50%;
-  width: 8px;
-  background: #00FFFF;
+  width: 105px; /* Adjust width to fit the road */
+  background: white;
   transform: translateX(-50%);
+  background-image: url("/transport.svg");
+  background-repeat: repeat-y;
+  background-size: contain; 
+  overflow: hidden; /* Ensures rounded effect is visible */
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, black 15%, black 85%, rgba(0, 0, 0, 0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, black 15%, black 85%, rgba(0, 0, 0, 0) 100%);
 }
+
+
 
 /* Flowchart node - Alternates between left and right */
 .flowchart-node {
@@ -55,20 +63,20 @@
   content: "";
   position: absolute;
   top: 50%;
-  width: 85px;
-  height: 4px;
+  width: 57px;
+  height: 2px;
   background: #00FFFF;
   transition: width 0.3s ease;
 }
 
 /* Odd nodes (Left side) - Connector to the right */
 .flowchart-node:nth-child(odd)::after {
-  right: -85px;
+  right: -57px;
 }
 
 /* Even nodes (Right side) - Connector to the left */
 .flowchart-node:nth-child(even)::after {
-  left: -85px;
+  left: -57px;
 }
 
 /* Reduce connector width on hover */

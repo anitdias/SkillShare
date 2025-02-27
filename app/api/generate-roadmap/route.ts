@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     const prompt =`As a highly experienced mentor and domain expert, create a structured, 
     step-by-step learning roadmap for mastering ${skillName}, tailored to a ${level} learner. 
-    Present the roadmap in a JSON-like format, strictly adhering to the following structure:
+    Present the roadmap in a JSON-like format, strictly adhering to the following structure with nothing else but the following structure(do not put any other header as it will cause parsing issue):
 
     {
   "roadmap": {
