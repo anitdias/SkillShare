@@ -450,14 +450,15 @@ export default function ProfilePage() {
 
               <form onSubmit={handleAddSkill} className="space-y-4 w-full">
                 <div className="flex flex-col gap-4 w-full">
+                <h2 className="font-bold font-mono text-2xl text-white ml-2">Add your Skill</h2>
                   <Input
                     placeholder="Skill name"
                     value={newSkill.name}
                     onChange={(e) => setNewSkill({name: e.target.value, categoryId: showAddSkillForm.categoryId })}
-                    className="flex-1 border-2 border-gray-300 text-gray-600"
+                    className="flex-1 border-2 border-gray-300 text-white"
                     required
                   />
-                  <Button type="submit" className="bg-[#1995AD] hover:bg-[#157892] w-full">
+                  <Button type="submit" className="bg-[#636363] hover:bg-[#222222] w-full">
                     Add Skill
                   </Button>
                 </div>
@@ -581,7 +582,7 @@ export default function ProfilePage() {
                       className="text-red-500 hover:text-red-700"
                       onClick={() => handleDeleteWishlist(skill.id)}
                     >
-                      <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
+                      <LucideX className="h-4 w-4 text-gray-400 hover:text-red-500 rounded-full" />
                     </Button>
                     </div>
                 </div>
@@ -653,9 +654,9 @@ export default function ProfilePage() {
                   placeholder="Add a skill you want to learn"
                   value={newWishlistItem}
                   onChange={(e) => setNewWishlistItem(e.target.value)}
-                  className="flex-1 border-2 border-gray-300 text-gray-600"
+                  className="flex-1 border-2 border-gray-300 text-white"
                 />
-                <Button type="submit" className="bg-[#1995AD] hover:bg-[#157892]">
+                <Button type="submit" className="bg-[#636363] hover:bg-[#222222]">
                   Add
                 </Button>
               </div>
@@ -666,16 +667,16 @@ export default function ProfilePage() {
               .map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between bg-[#222222] p-1 rounded-xl text-white text-sm hover:bg-gray-300"
+                  className="flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] p-1 rounded-xl text-white text-sm"
                 >
                   <span>&nbsp;{item.skillName}</span>
                   <div className="flex justify-between space-x-2">
-                  <Button className="bg-[#1995AD] hover:bg-[#157892] text-white" onClick={() => {
+                  <Button className="bg-[#222222] hover:bg-[#636363] text-white" onClick={() => {
                       router.push(`/roadmap?skillName=${item.skillName}`)
                     }}>
                     Roadmap
                   </Button>
-                  <Button className="text-white bg-[#1995AD] hover:bg-[#157892]" onClick={() =>{
+                  <Button className="text-white bg-[#222222] hover:bg-[#636363]" onClick={() =>{
                     handleAddSkillfromWishlist({name: item.skillName, categoryId: showWishlistForm.categoryId});
                     handleDeleteWishlist(item.id);
                   }}>

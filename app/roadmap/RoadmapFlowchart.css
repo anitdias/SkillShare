@@ -127,3 +127,17 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 640px) {
+  /* Stack nodes vertically */
+  .flowchart-node {
+    align-self: center !important;
+    transform: none !important;
+    width: 90%; /* Adjust width for better responsiveness */
+  }
+
+  /* Remove connector lines on small screens */
+  .flowchart-node::after {
+    display: none !important;
+  }
+}

@@ -50,7 +50,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#222222] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8 space-y-6 bg-[#3b3b3b] border-[#3b3b3b] shadow-xl rounded-xl">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
@@ -110,7 +110,7 @@ export default function LoginPage() {
           <Button
             variant="outline"
             onClick={() => signIn('google', { callbackUrl: '/profile' })}
-            className="w-full flex items-center justify-center text-white"
+            className="w-full flex items-center justify-center text-white hover:bg-[#222222]"
           >
             <FcGoogle className="mr-2 h-5 w-5" /> {/* Google Icon */}
             Sign-Up with Google

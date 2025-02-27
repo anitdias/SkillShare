@@ -157,7 +157,7 @@ export default function ProfilePage() {
       return(
         <div className="min-h-screen bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444] p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
-      <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
+        <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
         <div className="flex items-center">
           <Button
             variant="ghost"
@@ -172,10 +172,10 @@ export default function ProfilePage() {
             )}
           </Button>
 
-          <h1 className="text-xl font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg p-1">
-            {fulltext}
-          </h1>
-        </div>
+          <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+              {fulltext}
+            </h1>
+          </div>
 
         {/* Search Bar */}
         <div className="flex-grow flex items-center justify-center">
@@ -195,8 +195,6 @@ export default function ProfilePage() {
                     className="p-2 hover:bg-gray-400 cursor-pointer text-white"
                     onClick={() => {
                       router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)
-                      searchUsers.length = 0;
-                      setQuery('');
                     }}
                   >
                     {user.name}
@@ -210,7 +208,7 @@ export default function ProfilePage() {
           onClick={() => {
             router.push('/profile')
           }}
-          className="mr-2 mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
+          className="bg-[#636363] hover:bg-[#222222] text-sm ml-2 sm:text-md px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-md mr-2"
         >
           Return to Profile
         </Button>
@@ -218,10 +216,11 @@ export default function ProfilePage() {
           onClick={() => {
             signOut({ callbackUrl: "/" });
           }}
-          className="mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
+          className="hidden md:block mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
         >
           Sign Out
         </Button>
+
       </nav>
 
         {/* Sidebar */}
@@ -259,7 +258,7 @@ export default function ProfilePage() {
             )}
         </AnimatePresence>
 
-        <div className="flex flex-col md:flex-row gap-6 mt-12">
+        <div className="mt-14 sm:flex flex-col md:flex-row gap-6 mt-12">
                   {/* Profile Card - Takes 2/3rd of the width */}
                   <Card className="w-full bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
                     {/* Cover Photo */}
@@ -314,7 +313,7 @@ export default function ProfilePage() {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex-1 text-center py-2 text-white font-medium transition-all ${
+                className={`flex-1 text-center text-white py-2 font-medium transition-all text-sm sm:text-base ${
                   selectedCategory === category.id
                     ? "border-b-4 border-blue-500 text-blue-400"
                     : "text-gray-400 hover:text-white"

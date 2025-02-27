@@ -65,22 +65,22 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#A1D6E2] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 bg-white shadow-xl rounded-xl">
+    <div className="min-h-screen bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md p-8 space-y-6 bg-[#3b3b3b] border-[#3b3b3b] shadow-xl rounded-xl">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-[#1995AD] mb-2">Create Account</h1>
-          <p className="text-gray-600">Join SkillShare today</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
+          <p className="text-white">Join SkillShare today</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <div className="relative text-black">
+            <div className="relative text-white">
               <Input
                 type="text"
                 placeholder="Username"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="pl-10"
+                className="pl-10 border border-white"
                 required
               />
               <LucideUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -88,13 +88,13 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <div className="relative text-black">
+            <div className="relative">
               <Input
                 type="email"
                 placeholder="Email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="pl-10"
+                className="pl-10 text-white"
                 required
               />
               <LucideMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -102,13 +102,13 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-2">
-            <div className="relative text-black">
+            <div className="relative">
               <Input
                 type="password"
                 placeholder="Password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="pl-10"
+                className="pl-10 text-white"
                 required
               />
               <LucideLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -119,7 +119,7 @@ export default function SignupPage() {
 
           <Button
             type="submit"
-            className="w-full bg-[#1995AD] hover:bg-[#157892]"
+            className="w-full bg-[#636363] hover:bg-[#222222]"
             disabled={isLoading}
           >
             {isLoading ? 'Creating account...' : 'Create account'}
@@ -131,7 +131,7 @@ export default function SignupPage() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">Or continue with</span>
+            <span className="bg-[#636363] px-2 text-white">Or continue with</span>
           </div>
         </div>
 
@@ -139,14 +139,14 @@ export default function SignupPage() {
                   <Button
                     variant="outline"
                     onClick={() => signIn('google', { callbackUrl: '/profile' })}
-                    className="w-full flex items-center justify-center text-black"
+                    className="w-full flex items-center justify-center text-white hover:bg-[#222222]"
                   >
                     <FcGoogle className="mr-2 h-5 w-5" /> {/* Google Icon */}
                     Sign-Up with Google
                   </Button>
                 </div>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-white">
           Already have an account?{' '}
           <Link href="/login" className="text-[#1995AD] hover:underline">
             Sign in
