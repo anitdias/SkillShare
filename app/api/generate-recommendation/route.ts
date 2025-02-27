@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import type { Session } from "next-auth";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -10,7 +11,7 @@ const openai = new OpenAI({
 
 export async function POST(req: NextRequest) {
     try {
-      const session = await getServerSession(authOptions);
+        const session: Session | null = await getServerSession(authOptions);
 
       const body = await req.json();
       const { skills, wishlistSkills } = body; // Use wishlistSkills instead of wishlist
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
       if (!session || !session.user) {
         throw new Error("User session not found.");
       }
-      
+
       const updatedUser = await prisma.user.update({
         where: { id: session.user.id },
         data: { recommendation: recommendation }, // Ensure recommendation is stored as JSON
