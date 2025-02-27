@@ -16,16 +16,16 @@ export async function POST(request: Request) {
     }
 
     // Parse the request body
-    let { skillName,level } = await request.json();
+    const { skillName,level } = await request.json();
 
     // Normalize skillName: convert to lowercase and remove spaces
-    skillName = skillName.toLowerCase().replace(/\s+/g, "");
+    const finalSkillName = skillName.toLowerCase().replace(/\s+/g, "");
 
     // Fetch the roadmap from the database using the user's ID and normalized skillName
     const savedRoadmap = await prisma.roadmap.findFirst({
       where: {
         userId: session.user.id,
-        skillName,
+        skillName: finalSkillName,
         level // The normalized skill name
       },
       select: {

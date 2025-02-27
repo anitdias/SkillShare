@@ -6,15 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from '@/components/ui/card';
 import { signOut } from "next-auth/react";
-import { Input } from "@/components/ui/input";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from '@/components/ui/select';
-import { LucidePlus, LucideX, LucideUser, LucideMail } from 'lucide-react';
+import { LucideUser, LucideMail } from 'lucide-react';
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -25,11 +17,6 @@ interface Skill {
     id: string;
     name: string;
     categoryId: string;
-}
-
-interface User {
-    id: string;
-    name: string;
 }
 
 interface SearchedUserSKill {

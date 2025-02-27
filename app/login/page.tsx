@@ -43,7 +43,7 @@ export default function LoginPage() {
         router.push('/profile');
       }
     } catch (error) {
-      setError('An error occurred. Please try again.');
+      setError(`An error occurred. Please try again.${error}`);
     } finally {
       setIsLoading(false);
     }

@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { signOut } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ export default function RoadmapForm() {
   const searchParams = useSearchParams();
   const [skillName, setSkillName] = useState<string | null>();
   const [level, setLevel] = useState<string>("beginner");
-  const [roadmap, setRoadmap] = useState<any>(null);
+  const [roadmap, setRoadmap] = useState(null);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
@@ -113,7 +112,7 @@ export default function RoadmapForm() {
         return;
       }
 
-      const data = await response.json();
+      await response.json();
     } catch (err) {
       console.error("Error saving roadmap:", err);
       setError("Failed to save the roadmap. Please try again.");

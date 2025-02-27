@@ -1,6 +1,7 @@
 import prisma from "../../../../lib/prisma";
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import _ from 'lodash';
 
 export async function POST(request: Request) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     });
 
     // Remove sensitive data before sending response
-    const { passwordHash: _, ...userWithoutPassword } = user;
+    const userWithoutPassword = _.omit(user, ['passwordHash']);
 
     return NextResponse.json(
       { message: 'User created successfully', user: userWithoutPassword },

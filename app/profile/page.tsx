@@ -52,7 +52,6 @@ export default function ProfilePage() {
     const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
     const [showAddSkillForm, setShowAddSkillForm] = useState({set:false, categoryId: ''});
     const [showWishlistForm, setShowWishlistForm] = useState({set:false, categoryId: ''});
-    const [showViewMore, setShowViewMore] = useState({set:false, categoryId: ''});
     const [newSkill, setNewSkill] = useState({ name: '', categoryId: '' });
     const [newWishlistItem, setNewWishlistItem] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -95,7 +94,9 @@ export default function ProfilePage() {
           ]);
     
           setUserSkills(skillData.skills); // Extract skills from API response
-          const recommendation = JSON.parse(skillData.recommendation);
+          const recommendation = skillData.recommendation
+                                ? JSON.parse(skillData.recommendation)
+                                : { skills: [], summary: "" };
           setRecommendation(recommendation); // Set recommendation
           setWishlist(wishlist);
         }
@@ -156,7 +157,7 @@ export default function ProfilePage() {
             });
       
             if (response.ok) {
-              const item = await response.json();
+              await response.json();
               setWishlist(wishlist => wishlist.filter(object => object.id!== id ));
               
             }
@@ -176,7 +177,7 @@ export default function ProfilePage() {
               });
 
             if(response.ok){
-                const res = await response.json();
+                await response.json();
                 setUserSkills(userSkills => userSkills.filter(object=> object.id!== id))
             }
         }
@@ -245,7 +246,9 @@ export default function ProfilePage() {
           }
       
           const data = await response.json();
-          const recommendation = JSON.parse(data.recommendation);
+          const recommendation = data.recommendation
+                                ? JSON.parse(data.recommendation)
+                                : { skills: [], summary: "" };
           setRecommendation(recommendation);
         } catch (err) {
           console.error("Error fetching recommendation:", err);
@@ -403,7 +406,7 @@ export default function ProfilePage() {
             <div className="relative">
               <div className="absolute -top-10 left-6">
                 <Image
-                  src={session?.user?.image}
+                  src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
                   alt="Profile"
                   width={140}
                   height={140}
@@ -624,7 +627,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="text-center bg-[#2d2d2d] p-4 rounded-xl shadow-md border border-[#3b3b3b]">
-                  <p className="text-gray-400 text-md">No recommendations yet. Click "Generate" to get started.</p>
+                  <p className="text-gray-400 text-md">No recommendations yet. Click Generate to get started.</p>
                 </div>
               )}
             </div>

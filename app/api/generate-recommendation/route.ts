@@ -57,10 +57,11 @@ export async function POST(req: NextRequest) {
 
       const updatedUser = await prisma.user.update({
         where: { id: session.user.id },
-        data: { recommendation: recommendation as any }, // Ensure recommendation is stored as JSON
+        data: { recommendation: recommendation }, // Ensure recommendation is stored as JSON
       });
 
       console.log("Generated roadmap:", recommendation);
+      console.log("User recommendation updated:", updatedUser);
       return NextResponse.json({ recommendation });
     } catch (error) {
       console.error("Error generating roadmap:", error);

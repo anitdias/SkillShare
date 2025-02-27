@@ -14,11 +14,11 @@ export async function POST(request: Request) {
         );
       }
   
-      let { skillName, level, roadmap } = await request.json();
+      const { skillName, level, roadmap } = await request.json();
       console.log(skillName, level, roadmap);
   
       // Normalize skillName: convert to lowercase and remove spaces
-      skillName = skillName.toLowerCase().replace(/\s+/g, "");
+      const finalSkillName = skillName.toLowerCase().replace(/\s+/g, "");
   
       // Use upsert to handle create/update logic in a single query
       const savedRoadmap = await prisma.roadmap.upsert({
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         },
         create: {
           userId: session.user.id,
-          skillName,
+          skillName: finalSkillName,
           level,
           roadmap,
         },
