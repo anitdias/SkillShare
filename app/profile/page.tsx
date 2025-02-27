@@ -148,7 +148,7 @@ export default function ProfilePage() {
         }
       };
 
-      const handleDeleteWishlist = async (id) =>{
+      const handleDeleteWishlist = async (id: string) =>{
         try {
             const response = await fetch('/api/wishlist', {
               method: 'DELETE',
@@ -168,7 +168,7 @@ export default function ProfilePage() {
 
       }
     
-      const handleDeleteSkill = async (id) => {
+      const handleDeleteSkill = async (id: string) => {
         try{
             const response = await fetch('/api/skills', {
                 method: 'DELETE',
@@ -186,7 +186,7 @@ export default function ProfilePage() {
           }
       }
 
-      const handleAddSkillfromWishlist = async ({ name: name, categoryId: categoryId }) => {
+      const handleAddSkillfromWishlist = async ({ name, categoryId }: { name: string; categoryId: string }) => {
           try{
               const response = await fetch('/api/skills', {
                   method: 'POST',

@@ -16,13 +16,28 @@ interface SearchUser {
   name: string;
 }
 
+type RoadmapStep = {
+  label: string;
+  description: string;
+  timeline: string;
+  resources: string[];
+  challenges: string[];
+  outcome: string;
+};
+
+type RoadmapType = {
+  roadmap: {
+    steps: RoadmapStep[];
+  };
+};
+
 export default function RoadmapForm() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [skillName, setSkillName] = useState<string | null>();
   const [level, setLevel] = useState<string>("beginner");
-  const [roadmap, setRoadmap] = useState(null);
+  const [roadmap, setRoadmap] = useState<RoadmapType | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<number | null>(null);

@@ -4,6 +4,8 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prisma";
 import bcrypt from "bcryptjs";
+import type { JWT } from "next-auth/jwt";
+import type { Session, User } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -27,7 +29,8 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+        const passwordHash = user.passwordHash ?? ""; // Provide a default empty string
+        const isValid = await bcrypt.compare(credentials.password, passwordHash);
 
         if (!isValid) {
           return null;
@@ -53,23 +56,22 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: JWT; user?: User }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
-        token.image = user.image || user.picture;
+        token.image = user.image;
       }
       return token;
     },
 
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id; 
-        session.user.name = token.name;
-        session.user.image = token.image; 
+    async session({ session, token }: { session: Session; token: JWT }) {
+        if (session.user) {
+          session.user.id = token.id as string; 
+          session.user.name = token.name as string | null | undefined;
+          session.user.image = token.image as string | null | undefined;
+        }
+        return session;
       }
-      return session;
-    }
   }
 };
-

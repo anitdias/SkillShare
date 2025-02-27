@@ -25,7 +25,8 @@ const categories = [
 ];
 
 export default function RadialGraph({ userSkills }: { userSkills: UserSkill[] }) {
-  const [categoryData, setCategoryData] = useState([]);
+  const [categoryData, setCategoryData] = useState<{ category: string; value: number }[]>([]);
+
 
   useEffect(() => {
     // Calculate the number of skills per category
