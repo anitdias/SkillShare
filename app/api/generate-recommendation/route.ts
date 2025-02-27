@@ -54,7 +54,11 @@ export async function POST(req: NextRequest) {
       if (!recommendation) {
         return NextResponse.json({ error: "Failed to generate roadmap. No content from OpenAI." }, { status: 500 });
       }
-
+      
+      if (!session || !session.user) {
+        throw new Error("User session not found.");
+      }
+      
       const updatedUser = await prisma.user.update({
         where: { id: session.user.id },
         data: { recommendation: recommendation }, // Ensure recommendation is stored as JSON
