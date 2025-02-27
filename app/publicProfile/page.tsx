@@ -40,6 +40,11 @@ interface SearchedUserSKill {
     validatedByManager: boolean;
 }
 
+interface SearchUser {
+  id: string;
+  name: string;
+}
+
 
 export default function ProfilePage() {
 
@@ -56,7 +61,6 @@ export default function ProfilePage() {
     const [searchedUserId, setSearchedUserId] = useState<string | null>();
     const [searchedUsername, setSearchedUsername] = useState<string | null>();
     const [searchedUserSkills, setSearchedUserSkills] = useState<SearchedUserSKill[]>([]);
-    const [showViewMore, setShowViewMore] = useState({set:false, categoryId: ''});
     const [isLoading, setIsLoading] = useState(true);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [query, setQuery] = useState('');

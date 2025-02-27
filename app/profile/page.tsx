@@ -698,62 +698,6 @@ export default function ProfilePage() {
           </div>
           )}
 
-
-
-          {/* view more skill */}
-          {showViewMore.set && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-30">
-            <Card className="relative p-4 bg-[#3b3b3b] border-[#3b3b3b] w-[650px] h-[650px] flex flex-col justify-baseline rounded-lg shadow-lg">
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-1 text-gray-600 hover:text-gray-800"
-                onClick={() => setShowViewMore({set: false, categoryId: ''})} // Close the form
-              >
-                <LucideX className="h-5 w-5 hover:bg-gray-200 rounded-full" />
-              </Button>
-              <h2 className="text-xl font-semibold font-mono mb-4 text-white">Skills</h2>
-              <form onSubmit={handleAddSkill} className="mb-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Add a skill you want to learn"
-                    value={newSkill.name}
-                    onChange={(e) => setNewSkill({name: e.target.value, categoryId: showViewMore.categoryId })}
-                    className="flex-1 border-2 border-gray-300 text-gray-600"
-                  />
-                  <Button type="submit" className="bg-[#1995AD] hover:bg-[#157892]">
-                    Add
-                  </Button>
-                </div>
-              </form>
-              <div className="space-y-2 overflow-auto">
-                {userSkills
-                .filter((item) =>  item.categoryId === showViewMore.categoryId)
-                .map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between bg-[#222222] p-1 rounded-xl text-white text-sm hover:bg-gray-300"
-                  >
-                    <span>&nbsp;{item.skill.name}</span>
-                  <div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => handleDeleteSkill(item.id)}
-                    >
-                      <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
-                    </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-            </div>
-            )}
-
-          
-
     </div>
 
     </div>
