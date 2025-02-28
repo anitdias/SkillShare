@@ -451,7 +451,14 @@ export default function ProfilePage() {
                 <LucideX className="h-5 w-5 hover:bg-gray-200 rounded-full" />
               </Button>
 
-              <form onSubmit={handleAddSkill} className="space-y-4 w-full">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAddSkill();
+                  setShowAddSkillForm({ set: false, categoryId: "" }); // Close the form after submission
+                }}
+                className="space-y-4 w-full"
+              >
                 <div className="flex flex-col gap-4 w-full">
                 <h2 className="font-bold font-mono text-2xl text-white ml-2">Add your Skill</h2>
                   <Input
@@ -566,7 +573,7 @@ export default function ProfilePage() {
                   key={skill.id}
                   className="flex items-center justify-between bg-[#2d2d2d] p-3 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
                 >
-                  <span className="text-white text-md">{skill.skillName}</span>
+                  <span className="text-white text-md mr-1">{skill.skillName}</span>
                   <div className="flex justify-between space-x-2">
                     <Button className="bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white" onClick={() => {
                         router.push(`/roadmap?skillName=${skill.skillName}`)
@@ -596,17 +603,20 @@ export default function ProfilePage() {
           </div>
           <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center relative">
             {/* Title */}
-            <h3 className="text-white text-xl font-bold font-mono text-left sm:text-center w-full ml-0">
-              Recommendations
-            </h3>
+            <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between">
+              <h3 className="text-white text-xl font-bold font-mono text-center sm:w-full ml-0">
+                Recommendations
+              </h3>
 
-            {/* Generate Button */}
-            <Button
-              onClick={fetchRecommendation}
-              className="border-2 border-[#2d2d2d] hover:bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-md absolute top-0 right-0 m-2"
-            >
-              {recommendation.skills.length > 0 ? "Re-Generate" : "Generate"}
-            </Button>
+              {/* Generate Button */}
+              <Button
+                onClick={fetchRecommendation}
+                className="border-2 border-[#2d2d2d] hover:bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-md mt-2 sm:sm:absolute sm:top-0 sm:right-0 m-2"
+              >
+                {recommendation.skills.length > 0 ? "Re-Generate" : "Generate"}
+              </Button>
+            </div>
+
             
             {/* Recommendations List */}
             <div className="mt-4 w-full px-4">
@@ -616,7 +626,7 @@ export default function ProfilePage() {
                     {recommendation.skills.map((skill, index) => (
                       <span
                         key={index}
-                        className="bg-[#2d2d2d] px-4 py-2 rounded-lg shadow-md text-white text-md whitespace-nowrap"
+                        className="bg-[#2d2d2d] px-4 py-2 rounded-lg shadow-md text-white text-md"
                       >
                         {skill}
                       </span>
