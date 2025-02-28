@@ -287,20 +287,25 @@ export default function RoadmapForm() {
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
           </select>
-          <div className='flex justify-between w-full'>
-            <button type="submit" className="bg-[#636363] hover:bg-[#222222] text-white p-2 rounded flex items-center">
-            <BrainCircuit className="w-5 h-5 mr-2" />
-              Generate Roadmap
-            </button>
-            <button
-              type="button"
-              onClick={saveRoadmap}
-              className="bg-[#636363] hover:bg-[#222222] text-white p-2 rounded flex items-center"
+          <div className="flex justify-between w-full flex-wrap gap-2">
+            <button 
+                type="submit" 
+                className="bg-[#636363] hover:bg-[#222222] text-white p-2 sm:p-3 rounded flex items-center min-w-0 text-sm sm:text-base"
             >
-              <Download className="w-5 h-5 mr-2" /> {/* Add the icon */}
-              Save Roadmap
+                <BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Generate Roadmap
             </button>
-          </div>
+
+            <button
+                type="button"
+                onClick={saveRoadmap}
+                className="bg-[#636363] hover:bg-[#222222] text-white p-2 sm:p-3 rounded flex items-center min-w-0 text-sm sm:text-base"
+            >
+                <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Save Roadmap
+            </button>
+            </div>
+  
         </form>
         <hr className="text-gray-600 mt-3"/>
         <div className="mt-4 text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] p-4 rounded-xl">
