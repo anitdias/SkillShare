@@ -34,6 +34,8 @@ export async function POST(request: Request) {
          },
     });
 
+    console.log(savedRoadmap);
+
     // Check if a roadmap was found
     if (!savedRoadmap) {
       return NextResponse.json(

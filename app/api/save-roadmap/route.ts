@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         where: {
           userId_skillName_level: {
             userId: session.user.id,
-            skillName,
+            skillName: finalSkillName,
             level,
           },
         },
