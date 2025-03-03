@@ -1,9 +1,8 @@
+"use client";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
-// Dynamically import ProfilePage to avoid SSR issues
-const ProfilePage = dynamic(() => import("./publicProfile"), { 
-  ssr: false, // Ensures it's only loaded on the client-side 
+const ProfilePage = dynamic(() => import("./publicProfile"), {
   loading: () => (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444]">
       {/* Animated Background Overlay */}
@@ -34,7 +33,7 @@ const ProfilePage = dynamic(() => import("./publicProfile"), {
         </motion.p>
       </div>
     </div>
-  )
+  ),
 });
 
 export default function PublicProfilePage() {
