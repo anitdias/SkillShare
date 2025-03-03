@@ -330,12 +330,16 @@ export default function ProfilePage() {
             />
             
             {searchUsers.length > 0 && query && (
-              <div className="absolute top-12 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
+              <div className="absolute top-10 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
                 {searchUsers.map((user) => (
                   <div
                     key={user.id}
                     className="p-2 hover:bg-gray-400 cursor-pointer text-white"
-                    onClick={() => router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)}
+                    onClick={() => {
+                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                      setQuery(""); // Clear the search input
+                      setSearchUsers([]); // Clear the search results
+                    }}
                   >
                     {user.name}
                   </div>
@@ -343,6 +347,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+
 
           {/* Right Section - Sign Out Button */}
           <Button

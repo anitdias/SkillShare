@@ -169,23 +169,25 @@ export default function ProfilePage() {
           </div>
 
         {/* Search Bar */}
-        <div className="flex-grow flex items-center justify-center">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={query}
-            onChange={handleInputChange}
-            className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
-          />
-
-        {searchUsers.length > 0 && query && (
-              <div className="absolute top-12 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
+        <div className="text-sm mr-2 sm:flex flex-grow text-md items-center justify-center relative">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={query}
+              onChange={handleInputChange}
+              className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
+            />
+            
+            {searchUsers.length > 0 && query && (
+              <div className="absolute top-10 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
                 {searchUsers.map((user) => (
                   <div
                     key={user.id}
                     className="p-2 hover:bg-gray-400 cursor-pointer text-white"
                     onClick={() => {
-                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)
+                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                      setQuery(""); // Clear the search input
+                      setSearchUsers([]); // Clear the search results
                     }}
                   >
                     {user.name}
@@ -193,7 +195,7 @@ export default function ProfilePage() {
                 ))}
               </div>
             )}
-            </div>
+          </div>
 
         <Button
           onClick={() => {
