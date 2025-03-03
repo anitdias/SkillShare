@@ -1,10 +1,11 @@
-import { Suspense } from "react";
-import ProfilePage from "./publicProfile";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 
-export default function PublicProfilePage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444]">
+// Dynamically import ProfilePage to avoid SSR issues
+const ProfilePage = dynamic(() => import("./publicProfile"), { 
+  ssr: false, // Ensures it's only loaded on the client-side 
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444]">
       {/* Animated Background Overlay */}
       <motion.div
         className="absolute inset-0 opacity-20"
@@ -15,7 +16,6 @@ export default function PublicProfilePage() {
           backgroundSize: "200% 200%",
         }}
       />
-
       {/* Glassmorphic Loading Container */}
       <div className="relative p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
         {/* Spinner Animation */}
@@ -24,18 +24,19 @@ export default function PublicProfilePage() {
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
-
-        {/* Loading Text (Fixed easing function) */}
+        {/* Loading Text */}
         <motion.p
           className="mt-4 text-lg font-semibold text-white/90 tracking-wide"
           animate={{ opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} // Fixed this!
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         >
           Loading, please wait...
         </motion.p>
       </div>
-    </div>}>
-      <ProfilePage />
-    </Suspense>
-  );
+    </div>
+  )
+});
+
+export default function PublicProfilePage() {
+  return <ProfilePage />;
 }
