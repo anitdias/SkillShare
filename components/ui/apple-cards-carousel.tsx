@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 interface CarouselProps {
-  items: JSX.Element[];
+  items: React.ReactNode[];
   initialScroll?: number;
 }
 
