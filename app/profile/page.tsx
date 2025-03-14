@@ -832,7 +832,7 @@ export default function ProfilePage() {
           
           {expandedSkill && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-gradient-to-br from-[#2c3e50] to-[#0a66c2] backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
+              <div className="bg-neutral-950 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl text-white font-semibold">
                     {userSkills.find(s => s.id === expandedSkill)?.skill.name}
