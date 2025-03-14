@@ -2,18 +2,29 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card } from '@/components/ui/card';
 import { signOut } from "next-auth/react";
 import { Input } from "@/components/ui/input";
-import { LucidePlus, LucideX, LucideUser, LucideMail } from 'lucide-react';
-import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { LucidePlus, LucideX, Search, Quote } from 'lucide-react';
+import { motion } from "framer-motion";
 import RadialGraph from "@/components/ui/radialGraph";
-import Image from "next/image";
-
-
+import {DropdownItem,
+  DropdownTrigger,
+  Dropdown,
+  DropdownMenu,
+  Avatar,
+} from "@heroui/react";
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
+import { Tabs } from "@/components/ui/tabs";
+import { GlowingStarsBackgroundCard, GlowingStarsTitle, GlowingStarsDescription } from "@/components/ui/glowing-stars";
+import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
+import { globeConfig, sampleArcs } from "@/lib/globe_data";
+import dynamic from 'next/dynamic'
+const World = dynamic(() => import('@/components/ui/globe'), {
+  ssr: false, // Disable server-side rendering
+});
 interface Skill {
     id: string;
     name: string;
@@ -21,17 +32,20 @@ interface Skill {
 }
 
 interface UserSKill {
-    id: string;
-    skillId: string;
-    categoryId: string;
-    skill: Skill;
-    validatedByManager: boolean;
+  id: string;
+  skillId: string;
+  categoryId: string;
+  skill: Skill;
+  validatedByManager: boolean;
+  level?: string;       // Added this property
+  description?: string; // Added this property
 }
 
 interface WishlistItem {
-    id: string;
-    skillName: string;
-    categoryId: string;
+  id: string;
+  skillName: string;
+  categoryId: string;
+  description?: string; // Added this property
 }
 
 interface SearchUser {
@@ -40,45 +54,85 @@ interface SearchUser {
 }
 
 export default function ProfilePage() {
-  const categories = [
-    {id: '1', name: 'Professional & Technical'},
-    {id: '2', name: 'Creative'},
-    {id: '3', name: 'Life & Physical' },
-    {id: '4', name: 'Social & Interpersonal' },
-]
-    const {data: session, status} = useSession();
-    const router = useRouter();
-    const [userSkills, setUserSkills] = useState<UserSKill[]>([]);
-    const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-    const [showAddSkillForm, setShowAddSkillForm] = useState({set:false, categoryId: ''});
-    const [showWishlistForm, setShowWishlistForm] = useState({set:false, categoryId: ''});
-    const [newSkill, setNewSkill] = useState({ name: '', categoryId: '' });
-    const [newWishlistItem, setNewWishlistItem] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [query, setQuery] = useState('');
-    const [searchUsers, setSearchUsers] = useState<SearchUser[]>([])
-    const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
-    const [recommendation, setRecommendation] = useState<{ skills: string[]; summary: string }>({
-      skills: [],
-      summary: "",
-    });
-    
+  const categories = useMemo((): { id: string; name: string }[] => [
+    { id: '1', name: 'Professional & Technical' },
+    { id: '2', name: 'Creative' },
+    { id: '3', name: 'Life & Physical' },
+    { id: '4', name: 'Social & Interpersonal' },
+], []);
+  
+  const {data: session, status} = useSession();
+  const router = useRouter();
+  const [userSkills, setUserSkills] = useState<UserSKill[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [showAddSkillForm, setShowAddSkillForm] = useState<{set: boolean; categoryId: string}>({set: false, categoryId: ''});
+  const [showWishlistForm, setShowWishlistForm] = useState<{set: boolean; categoryId: string}>({set: false, categoryId: ''});
+  const [isLoading, setIsLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [searchUsers, setSearchUsers] = useState<SearchUser[]>([])
+  const [newSkill, setNewSkill] = useState({ name: '', categoryId: '', level: 'Level 1', description: '' });
+  const [newWishlistItem, setNewWishlistItem] = useState('');
+  const [newWishlistDescription, setNewWishlistDescription] = useState('');
+  // const [recommendation, setRecommendation] = useState<{ skills: string[]; summary: string }>({
+  //   skills: [],
+  //   summary: "",
+  // });
+  const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
+  const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
+  const [expandedWishlist, setExpandedWishlist] = useState<string | null>(null);
+  const [editingSkill, setEditingSkill] = useState<{ level: string; description: string }>({ level: '', description: '' });
+  const [editingWishlistDescription, setEditingWishlistDescription] = useState('');
 
-    const categorySkills = userSkills.filter(
-      (us) => us.categoryId === selectedCategory
-    );
+  useEffect(() => {
+    // Delay loading of heavy background effects
+    const timer = setTimeout(() => {
+      setShowBackgroundEffects(true);
+    }, 100);
     
+    return () => clearTimeout(timer);
+  }, []);
 
-    const fulltext = "<Skill Share/>";
-    
-    useEffect(() => {
-        if (status=='unauthenticated'){
-            router.push('/login');
-        }else if(status == 'authenticated'){
-            fetchUserData();
-        }
-    }, [status,router])
+  const fulltext = "<SkillShare/>";
+  
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated') {
+      fetchUserData();
+    }
+  }, [status, router]);
+
+    const testimonials = useMemo(() => [
+      {
+        quote:
+          "Passionate about building scalable web applications and mentoring developers.",
+        name: session?.user?.name,
+        designation: "Intern at Framsikt",
+        src: session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      }
+    ], [session]);
+
+    const Icon = () => {
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth="1.5"
+          stroke="currentColor"
+          className="h-4 w-4 text-white stroke-2"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"
+          />
+        </svg>
+      );
+    };
+
+  
+  
 
     const fetchUserData = async () => {
       try {
@@ -94,10 +148,10 @@ export default function ProfilePage() {
           ]);
     
           setUserSkills(skillData.skills); // Extract skills from API response
-          const recommendation = skillData.recommendation
-                                ? JSON.parse(skillData.recommendation)
-                                : { skills: [], summary: "" };
-          setRecommendation(recommendation); // Set recommendation
+          // const recommendation = skillData.recommendation
+          //                       ? JSON.parse(skillData.recommendation)
+          //                       : { skills: [], summary: "" };
+          // setRecommendation(recommendation); // Set recommendation
           setWishlist(wishlist);
         }
       } catch (error) {
@@ -108,45 +162,53 @@ export default function ProfilePage() {
     };
     
 
-    const handleAddSkill = async (e?:React.FormEvent) => {
-      if(e){
-        e.preventDefault();}
-        try{
-            const response = await fetch('/api/skills', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newSkill),
-              });
-        
-              if (response.ok) {
-                const skill = await response.json();
-                setUserSkills([...userSkills, skill]);
-                setNewSkill({ name: '', categoryId: '' });
-              }
-            } catch (error) {
-              console.error('Error adding skill:', error);
-            }   
+    const handleAddSkill = async (e?: React.FormEvent) => {
+      if(e) {
+        e.preventDefault();
+      }
+      try {
+        const response = await fetch('/api/skills', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSkill),
+        });
+    
+        if (response.ok) {
+          const skill = await response.json();
+          setUserSkills([...userSkills, skill]);
+          setNewSkill({ name: '', categoryId: '', level: 'Level 1', description: '' });
+          setShowAddSkillForm({set: false, categoryId: ''});
+        }
+      } catch (error) {
+        console.error('Error adding skill:', error);
+      }   
     }
     const handleAddWishlistItem = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newWishlistItem.trim()) return;
+      e.preventDefault();
+      if (!newWishlistItem.trim()) return;
     
-        try {
-          const response = await fetch('/api/wishlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ skillName: newWishlistItem, categoryId: showWishlistForm.categoryId }),
-          });
+      try {
+        const response = await fetch('/api/wishlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            skillName: newWishlistItem, 
+            categoryId: showWishlistForm.categoryId,
+            description: newWishlistDescription 
+          }),
+        });
     
-          if (response.ok) {
-            const item = await response.json();
-            setWishlist([...wishlist, item]);
-            setNewWishlistItem('');
-          }
-        } catch (error) {
-          console.error('Error adding wishlist item:', error);
+        if (response.ok) {
+          const item = await response.json();
+          setWishlist([...wishlist, item]);
+          setNewWishlistItem('');
+          setNewWishlistDescription('');
+          setShowWishlistForm({set: false, categoryId: ''});
         }
-      };
+      } catch (error) {
+        console.error('Error adding wishlist item:', error);
+      }
+    }
 
       const handleDeleteWishlist = async (id: string) =>{
         try {
@@ -186,22 +248,67 @@ export default function ProfilePage() {
           }
       }
 
-      const handleAddSkillfromWishlist = async ({ name, categoryId }: { name: string; categoryId: string }) => {
-          try{
-              const response = await fetch('/api/skills', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ name: name, categoryId: categoryId }),
-                });
-          
-                if (response.ok) {
-                  const skill = await response.json();
-                  setUserSkills([...userSkills, skill]);
-                  setNewSkill({ name: '', categoryId: '' });
-                }
-              } catch (error) {
-                console.error('Error adding skill:', error);
-              }   
+      const handleAddSkillfromWishlist = async ({ name, categoryId, description }: { name: string; categoryId: string; description?: string }) => {
+        try {
+          const response = await fetch('/api/skills', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              name: name, 
+              categoryId: categoryId,
+              level: 'Level 1', // Default to Level 1 for new skills
+              description: description || '' // Use the description from wishlist if available
+            }),
+          });
+      
+          if (response.ok) {
+            const skill = await response.json();
+            setUserSkills([...userSkills, skill]);
+            setNewSkill({ name: '', categoryId: '', level: 'Level 1', description: '' });
+          }
+        } catch (error) {
+          console.error('Error adding skill:', error);
+        }   
+      }
+
+      const handleUpdateSkill = async (id: string, level: string, description: string) => {
+        try {
+          const response = await fetch('/api/skills', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, level, description }),
+          });
+      
+          if (response.ok) {
+            const updatedSkill = await response.json();
+            setUserSkills(userSkills.map(skill => 
+              skill.id === id ? updatedSkill : skill
+            ));
+            setExpandedSkill(null);
+          }
+        } catch (error) {
+          console.error('Error updating skill:', error);
+        }
+      }
+
+      const handleUpdateWishlist = async (id: string, description: string) => {
+        try {
+          const response = await fetch('/api/wishlist', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, description }),
+          });
+      
+          if (response.ok) {
+            const updatedItem = await response.json();
+            setWishlist(wishlist.map(item => 
+              item.id === id ? updatedItem : item
+            ));
+            setExpandedWishlist(null);
+          }
+        } catch (error) {
+          console.error('Error updating wishlist item:', error);
+        }
       }
 
       const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,33 +334,189 @@ export default function ProfilePage() {
     }
       };
     
-      const fetchRecommendation = async () => {
-        try {
-          // Extract skill names from userSkills and wishlist
-          const skills = userSkills.map((skill) => skill.skill.name);
-          const wishlistSkills = wishlist.map((item) => item.skillName);
+      // const fetchRecommendation = async () => {
+      //   try {
+      //     // Extract skill names from userSkills and wishlist
+      //     const skills = userSkills.map((skill) => skill.skill.name);
+      //     const wishlistSkills = wishlist.map((item) => item.skillName);
       
-          const response = await fetch("/api/generate-recommendation", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ skills, wishlistSkills }),
-          });
+      //     const response = await fetch("/api/generate-recommendation", {
+      //       method: "POST",
+      //       headers: { "Content-Type": "application/json" },
+      //       body: JSON.stringify({ skills, wishlistSkills }),
+      //     });
       
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Error fetching recommendation:", errorData);
-            return;
-          }
+      //     if (!response.ok) {
+      //       const errorData = await response.json();
+      //       console.error("Error fetching recommendation:", errorData);
+      //       return;
+      //     }
       
-          const data = await response.json();
-          const recommendation = data.recommendation
-                                ? JSON.parse(data.recommendation)
-                                : { skills: [], summary: "" };
-          setRecommendation(recommendation);
-        } catch (err) {
-          console.error("Error fetching recommendation:", err);
-        }
-      };
+      //     const data = await response.json();
+      //     const recommendation = data.recommendation
+      //                           ? JSON.parse(data.recommendation)
+      //                           : { skills: [], summary: "" };
+      //     setRecommendation(recommendation);
+      //   } catch (err) {
+      //     console.error("Error fetching recommendation:", err);
+      //   }
+      // };
+
+      const optimizedTabs = useMemo(() => {
+        // Process tabs in chunks to avoid blocking the main thread
+        const processTabsInChunks = (
+          categories: { id: string; name: string }[], 
+          userSkills: UserSKill[], 
+          wishlist: WishlistItem[]
+          ) => {
+          return categories.map(category => ({
+            title: category.name,
+            value: category.name,
+            content: (
+              <div className="w-full bg-neutral-950 shadow-xl overflow-hidden relative h-auto rounded-2xl p-10 ">
+                {/* Skills Section with Add Button */}
+                <div className="flex justify-between items-center">
+                  <h1 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono">Skills</h1>
+                  <Button 
+                    onClick={() => {
+                      console.log('Opening add skill form for category:', category.id);
+                      setShowAddSkillForm({set: true, categoryId: category.id});
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-2"
+                  >
+                    <LucidePlus size={20} />
+                  </Button>
+                </div>
+                <hr className="text-gray-600 mt-2"/>
+                <div className="w-full flex flex-col mb-5">
+                  <div className="flex-1 overflow-hidden">
+                    {(() => {
+                      const filteredSkills = userSkills.filter(skill => skill.categoryId === category.id);
+                      if (filteredSkills.length > 0) {
+                        return (
+                          <div className="carousel-container h-full">
+                            <Carousel
+                            items={filteredSkills.map((skill, idx) => (
+                              <Card 
+                                key={skill.id}
+                                card={{
+                                  title: skill.skill.name,
+                                  category: skill.level || "Level 1",
+                                  src: "", 
+                                  content: (
+                                    <GlowingStarsBackgroundCard
+                                      className="cursor-pointer hover:scale-105 transition-transform"
+                                    >
+                                      <div className="flex justify-start">
+                                        <GlowingStarsTitle>{skill.skill.name}</GlowingStarsTitle>
+                                      </div>
+                                      <div className="flex justify-between items-end">
+                                        <GlowingStarsDescription>{skill.level || "Level 1"}</GlowingStarsDescription>
+                                        <div onClick={() => {
+                                        setExpandedSkill(skill.id);
+                                        setEditingSkill({ 
+                                          level: skill.level || "Level 1", 
+                                          description: skill.description || "" 
+                                        });
+                                      }} className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.1)] flex items-center justify-center">
+                                          <Icon />
+                                        </div>
+                                      </div>                          
+                                    </GlowingStarsBackgroundCard>
+                                  )
+                                }}
+                                index={idx}
+                                layout={false}
+                              />
+                            ))}
+                            initialScroll={0}
+                          />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="h-full flex items-center justify-center">
+                            <p className="text-white text-lg">No skills added yet in this category</p>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+                
+                {/* Future Skills Section - Same layout as Skills section */}
+                <div className="flex justify-between items-center">
+                  <h1 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mt-10">Future Skills</h1>
+                  <Button 
+                    onClick={() => {
+                      console.log('Opening wishlist form for category:', category.id);
+                      setShowWishlistForm({set: true, categoryId: category.id});
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-2 mt-10"
+                  >
+                    <LucidePlus size={20} />
+                  </Button>
+                </div>
+                <hr className="text-gray-600 mt-2"/>
+                <div className="w-full flex h-[100%] flex-col">
+                  <div className="flex-1 overflow-hidden">
+                    {(() => {
+                      const filteredWishlist = wishlist.filter(item => item.categoryId === category.id);
+                      if (filteredWishlist.length > 0) {
+                        return (
+                          <div className="carousel-container h-full relative z-10">
+                            <Carousel
+                              items={filteredWishlist.map((item, idx) => (
+                                <Card 
+                                  key={item.id}
+                                  card={{
+                                    title: item.skillName,
+                                    category: "Wishlist",
+                                    src: "",
+                                    content: (
+                                      <GlowingStarsBackgroundCard
+                                        className="cursor-pointer hover:scale-105 transition-transform"
+                                      >
+                                        <div className="flex justify-start">
+                                          <GlowingStarsTitle>{item.skillName}</GlowingStarsTitle>
+                                        </div>
+                                        <div className="flex justify-between items-end">
+                                          <GlowingStarsDescription>Future Skill</GlowingStarsDescription>
+                                          <div onClick={() => {
+                                          setExpandedWishlist(item.id);
+                                          setEditingWishlistDescription(item.description || "");
+                                        }} className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.1)] flex items-center justify-center">
+                                            <Icon />
+                                          </div>
+                                        </div>                          
+                                      </GlowingStarsBackgroundCard>
+                                    )
+                                  }}
+                                  index={idx}
+                                  layout={false}
+                                />
+                              ))}
+                              initialScroll={0}
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="h-full flex items-center justify-center bg-neutral-950 relative z-10 mb-72">
+                            <p className="text-white text-lg">No future skills added yet in this category </p>
+                          </div>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+              </div>
+            ),
+          }));
+        };
+        
+        return processTabsInChunks(categories, userSkills, wishlist);
+      }, [categories, userSkills, wishlist]);
       
     
       if(status === 'loading' || isLoading){
@@ -269,7 +532,7 @@ export default function ProfilePage() {
               backgroundSize: "200% 200%",
             }}
           />
-
+    
           {/* Glassmorphic Loading Container */}
           <div className="relative p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
             {/* Spinner Animation */}
@@ -278,7 +541,7 @@ export default function ProfilePage() {
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
             />
-
+    
             {/* Loading Text (Fixed easing function) */}
             <motion.p
               className="mt-4 text-lg font-semibold text-white/90 tracking-wide"
@@ -291,442 +554,368 @@ export default function ProfilePage() {
         </div>
         );
       }
-
+    
       return(
-        <div className="min-h-screen bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-      {/* navBar */}
-      <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
-          {/* Left Section - Sidebar & Title */}
-          <div className="flex items-center gap-3">
-            {/* Sidebar Toggle Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-white"
-            >
-              {isSidebarOpen ? (
-                <X className="text-white hover:bg-gray-200 rounded-full" size={24} />
-              ) : (
-                <Menu className="text-white" size={24} />
-              )}
-            </Button>
-
-            {/* Title */}
-            <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
-              {fulltext}
-            </h1>
-          </div>
-
-          {/* Center Section - Search Bar */}
-          <div className="text-sm mr-2 sm:flex flex-grow text-md items-center justify-center relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={query}
-              onChange={handleInputChange}
-              className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
-            />
-            
-            {searchUsers.length > 0 && query && (
-              <div className="absolute top-10 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
-                {searchUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="p-2 hover:bg-gray-400 cursor-pointer text-white"
-                    onClick={() => {
-                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
-                      setQuery(""); // Clear the search input
-                      setSearchUsers([]); // Clear the search results
-                    }}
-                  >
-                    {user.name}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-
-          {/* Right Section - Sign Out Button */}
-          <Button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="bg-[#636363] hover:bg-[#222222] text-sm sm:text-md px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-md"
-          >
-            Sign Out
-          </Button>
-        </nav>
-
-
-        {/* Sidebar */}
-        <AnimatePresence>
-          {isSidebarOpen && (
-              <motion.div
-                  initial={{ x: -320 }}
-                  animate={{ x: 0 }}
-                  exit={{ x: -320 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="fixed top-16 left-0 w-80 bg-[#3b3b3b] shadow-lg flex flex-col h-[calc(100vh-4rem)] z-10"
-              >
-                  <div className="p-6 flex-1">
-                    <div className="mb-5">
-                      <div className="flex items-center space-x-2">
-                        <LucideUser className="text-gray-400 h-5 w-5" />
-                        <h1 className="text-2xl font-bold text-white">{session?.user?.name || 'User'}</h1>
-                      </div>
-                      <div className="flex items-center space-x-2 mt-2">
-                        <LucideMail className="text-gray-400 h-5 w-5" />
-                        <p className="text-sm text-white">{session?.user?.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <RadialGraph userSkills={userSkills} />
-
-                  <div className="p-6 border-t">
-                      <Button
-                          onClick={() => signOut({ callbackUrl: "/" })}
-                          className="w-full bg-[#636363] hover:bg-[#222222]"
-                      >
-                          Sign Out
-                      </Button>
-                  </div>
-              </motion.div>
-          )}
-      </AnimatePresence>
+        <div className="min-h-screen bg-neutral-950 p-4 md:p-8">
       
-      <div className="mt-14 sm:flex flex-col md:flex-row gap-6 mt-12">
-          {/* Profile Card*/}
-          <Card className="w-full bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
-            {/* Cover Photo */}
-            <div className="relative h-32 bg-gray-300">
-              <img
-                src="https://plus.unsplash.com/premium_photo-1661872817492-fd0c30404d74?q=80&w=1487&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                alt="Background"
-                className="w-full h-full object-cover"
-              />
+          {/* navBar */}
+          <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+            {/* Left Section - Sidebar & Title */}
+            <div className="flex items-center gap-3">
+              {/* Title */}
+              <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+                {fulltext}
+              </h1>
             </div>
-
-            {/* Profile Picture*/}
-            <div className="relative">
-              <div className="absolute -top-10 left-6">
-                <Image
-                  src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-                  alt="Profile"
-                  width={140}
-                  height={140}
-                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full shadow-md"
+    
+            {/* Right Section - Search Bar & Sign Out */}
+            <div className="flex items-center gap-4">
+              {/* Search Bar */}
+              <div className="relative w-64 sm:w-80">
+                {/* Lucide Search Icon */}
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                
+                {/* Input Field */}
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={query}
+                  onChange={handleInputChange}
+                  className="w-full p-2 pl-10  border-gray-300 border-2 rounded-full shadow-sm focus:outline-none text-white"
                 />
-              </div>
-            </div>
-
-            {/* User Info */}
-            <div className="text-center px-4 pb-4 mt-10">
-              <h2 className="font-bold font-mono text-2xl text-white">{session?.user?.name}</h2>
-              <p className="text-sm text-white">{session?.user?.email}</p>
-              <p className="text-sm text-white mt-2">
-                Passionate about building scalable web applications and mentoring
-                developers.
-              </p>
-
-              {/* Buttons */}
-              <div className="mt-4 flex justify-center gap-2">
-                <button className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                  Connect
-                </button>
-                <button className="border border-gray-300 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-400 transition">
-                  Message
-                </button>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-
-        {/* Add Skill Form */}
-        {showAddSkillForm.set && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-30">
-            <Card className="relative p-3 bg-[#3b3b3b] border-[#3b3b3b] w-[400px] h-[200px] flex flex-col justify-center items-center rounded-lg shadow-lg">
-              {/* Close Button */}
-              <Button
-                variant="ghost"
-                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
-                onClick={() => setShowAddSkillForm({set: false, categoryId: ''})} // Close the form
-              >
-                <LucideX className="h-5 w-5 hover:bg-gray-200 rounded-full" />
-              </Button>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddSkill();
-                  setShowAddSkillForm({ set: false, categoryId: "" }); // Close the form after submission
-                }}
-                className="space-y-4 w-full"
-              >
-                <div className="flex flex-col gap-4 w-full">
-                <h2 className="font-bold font-mono text-2xl text-white ml-2">Add your Skill</h2>
-                  <Input
-                    placeholder="Skill name"
-                    value={newSkill.name}
-                    onChange={(e) => setNewSkill({name: e.target.value, categoryId: showAddSkillForm.categoryId })}
-                    className="flex-1 border-2 border-gray-300 text-white"
-                    required
-                  />
-                  <Button type="submit" className="bg-[#636363] hover:bg-[#222222] w-full">
-                    Add Skill
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          </div>
-        )}
-
-        {/* Skills Grid */}
-        <div className="mt-6">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-600">
-            {categories.map((category) => (
-              <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`flex-1 text-center text-white py-2 font-medium transition-all text-sm sm:text-base ${
-                selectedCategory === category.id
-                  ? "border-b-4 border-blue-500 text-blue-400"
-                  : "text-gray-400 hover:text-white"
-              }`}
-            >
-              {category.name}
-            </button>            
-            ))}
-          </div>
-
-          {/* Skills List & Overview */}
-          <div className="mt-4 flex flex-col md:flex-row gap-6 px-2">
-            {/* Skills List */}
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center justify-between space-x-2">
-                <h3 className="font-bold font-mono text-2xl text-white">Skills</h3>
-                <Button
-                  onClick={() => setShowAddSkillForm({ set: true, categoryId: selectedCategory })}
-                  className="bg-[#2d2d2d] hover:bg-gray-700 w-[50px] h-[38px]"
-                >
-                  <LucidePlus className="h-4 w-4" />
-                </Button>
-              </div>
-              <hr className="text-gray-600" />
-              {categorySkills.length > 0 ? (
-                <div className="flex flex-wrap gap-3">
-                  {categorySkills.map((userSkill) => (
-                    <div
-                      key={userSkill.id}
-                      className="flex items-center bg-[#2d2d2d] px-3 py-2 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
-                    >
-                      <span className="text-white text-md whitespace-nowrap">{userSkill.skill.name}</span>
-                      <div className="flex items-center ml-2">
-                        {userSkill.validatedByManager && (
-                          <span className="text-green-500 text-xs font-medium">✔</span>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-gray-400 hover:text-red-500 ml-2"
-                          onClick={() => handleDeleteSkill(userSkill.id)}
-                        >
-                          <LucideX className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-center">No skills added yet.</p>
-              )}
-            </div>
-
-            {/* Skill Overview Card */}
-            <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center">
-              <h3 className="text-white text-lg font-bold font-mono mb-4">Skills Overview</h3>
-              <RadialGraph userSkills={userSkills} />
-            </Card>
-          </div>
-        </div>
-
-
-
-
-        {/* Future Skills Section */}
-        <div className="mt-6 space-y-3 px-2">
-        <div className="mt-4 flex flex-col md:flex-row gap-6 px-2">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center justify-between space-x-2">
-              <h3 className="font-bold font-mono text-2xl text-white">Future Skills</h3>
-              <Button
-                onClick={() => setShowWishlistForm({ set: true, categoryId: selectedCategory })}
-                className="bg-[#2d2d2d] hover:bg-gray-700 w-[50px] h-[38px]"
-              >
-                <LucidePlus className="h-4 w-4" />
-              </Button>
-            </div>
-            <hr className="text-gray-600"/>
-
-            {wishlist.length > 0 ? (
-              wishlist
-              .filter((item) =>  item.categoryId === selectedCategory)
-              .map((skill) => (
-                <div
-                  key={skill.id}
-                  className="flex items-center justify-between bg-[#2d2d2d] p-3 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
-                >
-                  <span className="text-white text-md mr-1">{skill.skillName}</span>
-                  <div className="flex justify-between space-x-2">
-                    <Button className="bg-[#2d2d2d] hover:bg-[#1a1a1a] text-white" onClick={() => {
-                        router.push(`/roadmap?skillName=${skill.skillName}`)
-                      }}>
-                      Roadmap
-                    </Button>
-                    <Button className="text-white bg-[#2d2d2d] hover:bg-[#1a1a1a]" onClick={() =>{
-                      handleAddSkillfromWishlist({name: skill.skillName, categoryId: selectedCategory});
-                      handleDeleteWishlist(skill.id);
-                    }}>
-                    Add to Skills
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => handleDeleteWishlist(skill.id)}
-                    >
-                      <LucideX className="h-4 w-4 text-gray-400 hover:text-red-500 rounded-full" />
-                    </Button>
-                    </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-gray-400 text-center">No future skills added yet.</p>
-            )}
-          </div>
-          <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center relative">
-            {/* Title */}
-            <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between">
-              <h3 className="text-white text-xl font-bold font-mono text-center sm:w-full ml-0">
-                Recommendations
-              </h3>
-
-              {/* Generate Button */}
-              <Button
-                onClick={fetchRecommendation}
-                className="border-2 border-[#2d2d2d] hover:bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-md mt-2 sm:sm:absolute sm:top-0 sm:right-0 m-2"
-              >
-                {recommendation.skills.length > 0 ? "Re-Generate" : "Generate"}
-              </Button>
-            </div>
-
-            
-            {/* Recommendations List */}
-            <div className="mt-4 w-full px-4">
-              {recommendation.skills.length > 0 ? (
-                <div>
-                  <div className="flex flex-wrap gap-2">
-                    {recommendation.skills.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="bg-[#2d2d2d] px-4 py-2 rounded-lg shadow-md text-white text-md"
+                
+                {/* Dropdown for Search Results */}
+                {searchUsers.length > 0 && query && (
+                  <div className="absolute bg-[#000000] top-11 w-72 left-4 border-gray-300 border-2 rounded-md shadow-lg z-30">
+                    {searchUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="p-2 hover:bg-gray-400 cursor-pointer text-white"
+                        onClick={() => {
+                          router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          setQuery(""); // Clear search input
+                          setSearchUsers([]); // Clear results
+                        }}
                       >
-                        {skill}
-                      </span>
+                        {user.name}
+                      </div>
                     ))}
                   </div>
-                  <hr className="mt-4 border-gray-600" />
-                  <p className="text-white mt-4 text-sm leading-relaxed">{recommendation.summary}</p>
-                </div>
-              ) : (
-                <div className="text-center bg-[#2d2d2d] p-4 rounded-xl shadow-md border border-[#3b3b3b]">
-                  <p className="text-gray-400 text-md">No recommendations yet. Click Generate to get started.</p>
-                </div>
-              )}
-            </div>
-          </Card>
-
-        </div>
-      </div>
-
-
-
-
-          {/* Wishlist */}
-          {showWishlistForm.set && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-30">
-          <Card className="relative p-4 bg-[#3b3b3b] border-[#3b3b3b] w-[650px] h-[500px] flex flex-col justify-baseline rounded-lg shadow-lg">
-            <Button
-              variant="ghost"
-              className="absolute top-2 right-1 text-gray-600 hover:bg-gray-200 rounded-full"
-              onClick={() => setShowWishlistForm({set: false, categoryId: ''})} // Close the form
-            >
-              <LucideX className="h-5 w-5 hover:bg-gray-200 rounded-full" />
-            </Button>
-            <h2 className="text-xl font-semibold font-mono mb-4 text-white">Future Skills</h2>
-            <form onSubmit={handleAddWishlistItem} className="mb-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Add a skill you want to learn"
-                  value={newWishlistItem}
-                  onChange={(e) => setNewWishlistItem(e.target.value)}
-                  className="flex-1 border-2 border-gray-300 text-white"
-                />
-                <Button type="submit" className="bg-[#636363] hover:bg-[#222222]">
-                  Add
-                </Button>
+                )}
               </div>
-            </form>
-            <div className="space-y-2 overflow-auto">
-              {wishlist
-              .filter((item) =>  item.categoryId === showWishlistForm.categoryId)
-              .map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between bg-[#2d2d2d] hover:bg-[#1a1a1a] p-1 rounded-xl text-white text-sm"
-                >
-                  <span>&nbsp;{item.skillName}</span>
-                  <div className="flex justify-between space-x-2">
-                  <Button className="bg-[#222222] hover:bg-[#636363] text-white" onClick={() => {
-                      router.push(`/roadmap?skillName=${item.skillName}`)
-                    }}>
-                    Roadmap
-                  </Button>
-                  <Button className="text-white bg-[#222222] hover:bg-[#636363]" onClick={() =>{
-                    handleAddSkillfromWishlist({name: item.skillName, categoryId: showWishlistForm.categoryId});
-                    handleDeleteWishlist(item.id);
-                  }}>
-                  Add to Skills
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-700"
-                    onClick={() => handleDeleteWishlist(item.id)}
-                  >
-                    <LucideX className="h-4 w-4 hover:bg-gray-200 rounded-full" />
-                  </Button>
-                  </div>
-                </div>
-              ))}
+    
+              <Dropdown placement="bottom-end">
+                <DropdownTrigger>
+                  <Avatar
+                    isBordered
+                    as="button"
+                    className="transition-transform hover:scale-105"
+                    color="secondary"
+                    size="md"
+                    src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+                  />
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
+                  <DropdownItem key="profile" className="h-16 gap-2 hover:bg-gray-600 transition rounded-md">
+                    <p className="font-semibold text-sm text-gray-300">Signed in as</p>
+                    <p className="font-semibold text-sm text-white">{session?.user?.email}</p>
+                  </DropdownItem>
+                  <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
+                  <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
+                    Log Out
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
             </div>
-          </Card>
+          </nav>
+          
+          {showBackgroundEffects && (
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
+              <BackgroundBeams />
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 ml-4 md:ml-12 mt-20 md:mt-2">
+          <AnimatedTestimonials
+            testimonials={testimonials.map((t) => ({
+              ...t,
+              name: t.name ?? "Anonymous", // Provide a default value
+            }))}
+          />
+            <div className="ml-12 mt-5">
+            <RadialGraph userSkills={userSkills} />
+            </div>
           </div>
+    
+          <div className="h-[70rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full  items-start justify-start my-10">
+            <Tabs tabs={optimizedTabs} />
+          </div>
+
+          {showAddSkillForm.set && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl text-white font-semibold">Add Skill</h2>
+                  <Button 
+                    onClick={() => setShowAddSkillForm({set: false, categoryId: ''})}
+                    className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
+                  >
+                    <LucideX size={16} />
+                  </Button>
+                </div>
+                <form onSubmit={handleAddSkill} className="space-y-4">
+                <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Skill Name</label>
+                      <Input
+                        value={newSkill.name}
+                        onChange={(e) => setNewSkill({...newSkill, name: e.target.value, categoryId: showAddSkillForm.categoryId})}
+                        placeholder="Enter skill name"
+                        className="w-full bg-gray-800 border-gray-700 text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Level</label>
+                      <select
+                        value={newSkill.level}
+                        onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                        required
+                      >
+                        <option value="Level 1">Level 1</option>
+                        <option value="Level 2">Level 2</option>
+                        <option value="Level 3">Level 3</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                      <textarea
+                        value={newSkill.description}
+                        onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
+                        placeholder="Enter skill description"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                        rows={3}
+                      />
+                    </div>
+                    <Button 
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      Add Skill
+                    </Button>
+                </form>
+              </div>
+            </div>
           )}
 
-    </div>
+          {showWishlistForm.set && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl text-white font-semibold">Add Future Skill</h2>
+                  <Button 
+                    onClick={() => setShowWishlistForm({set: false, categoryId: ''})}
+                    className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
+                  >
+                    <LucideX size={16} />
+                  </Button>
+                </div>
+                <form onSubmit={handleAddWishlistItem} className="space-y-4">
+                <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Skill Name</label>
+                      <Input
+                        value={newWishlistItem}
+                        onChange={(e) => setNewWishlistItem(e.target.value)}
+                        placeholder="Enter future skill name"
+                        className="w-full bg-gray-800 border-gray-700 text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                      <textarea
+                        value={newWishlistDescription}
+                        onChange={(e) => setNewWishlistDescription(e.target.value)}
+                        placeholder="Enter skill description"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                        rows={3}
+                      />
+                    </div>
+                    <Button 
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      Add Future Skill
+                    </Button>
+                </form>
+              </div>
+            </div>
+          )}
 
-    </div>
+
+        {expandedWishlist && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-gradient-to-br from-[#2c3e50] to-[#0a66c2] backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl text-white font-semibold">
+                  {wishlist.find(w => w.id === expandedWishlist)?.skillName}
+                </h2>
+                <Button 
+                  onClick={() => setExpandedWishlist(null)}
+                  className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
+                >
+                  <LucideX size={16} />
+                </Button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <textarea
+                    value={editingWishlistDescription}
+                    onChange={(e) => setEditingWishlistDescription(e.target.value)}
+                    placeholder="Enter skill description"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex flex-col space-y-2 pt-2">
+                <Button 
+                  onClick={() => handleUpdateWishlist(expandedWishlist!, editingWishlistDescription)}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                >
+                  Save Changes
+                </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      onClick={() => {
+                        const wishlistItem = wishlist.find(w => w.id === expandedWishlist);
+                        if (wishlistItem) {
+                          router.push(`/roadmap?skillName=${wishlistItem.skillName}`);
+                        }
+                      }}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                    >
+                      Roadmap
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        const wishlistItem = wishlist.find(w => w.id === expandedWishlist);
+                        if (wishlistItem) {
+                          handleAddSkillfromWishlist({
+                            name: wishlistItem.skillName, 
+                            categoryId: wishlistItem.categoryId,
+                            description: editingWishlistDescription // Pass the current edited description
+                          });
+                          handleDeleteWishlist(expandedWishlist);
+                          setExpandedWishlist(null);
+                        }
+                      }}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white"
+                    >
+                      Add to Skills
+                    </Button>
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      handleDeleteWishlist(expandedWishlist);
+                      setExpandedWishlist(null);
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+          
+          {expandedSkill && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-gradient-to-br from-[#2c3e50] to-[#0a66c2] backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl text-white font-semibold">
+                    {userSkills.find(s => s.id === expandedSkill)?.skill.name}
+                  </h2>
+                  <Button 
+                    onClick={() => setExpandedSkill(null)}
+                    className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
+                  >
+                    <LucideX size={16} />
+                  </Button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Level</label>
+                    <select
+                      value={editingSkill.level}
+                      onChange={(e) => setEditingSkill({...editingSkill, level: e.target.value})}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                    >
+                      <option value="Level 1">Level 1</option>
+                      <option value="Level 2">Level 2</option>
+                      <option value="Level 3">Level 3</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                    <textarea
+                      value={editingSkill.description}
+                      onChange={(e) => setEditingSkill({...editingSkill, description: e.target.value})}
+                      placeholder="Enter skill description"
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex space-x-2 pt-2">
+                  <Button 
+                    onClick={() => handleUpdateSkill(expandedSkill!, editingSkill.level, editingSkill.description)}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                  >
+                    Save Changes
+                  </Button>
+                    <Button 
+                      onClick={() => {
+                        handleDeleteSkill(expandedSkill);
+                        setExpandedSkill(null);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left section - Quote */}
+            <div className="flex flex-col items-center justify-center">
+            <div className="relative">
+              {/* Left Quote - Normal */}
+              <Quote className="text-blue-400 absolute -left-12 -top-8 scale-x-[-1]" size={48} />
+              
+              <h2 className="text-xl md:text-3xl font-bold text-white mb-4 px-4">
+                Success is the sum of small efforts, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;repeated day-in and day-out.
+              </h2>
+
+              {/* Right Quote - Mirrored Horizontally & Rotated */}
+              <Quote className="text-blue-400 absolute -right-1 -bottom-4" size={48} />
+            </div>
+            <p className="text-lg md:text-xl text-blue-300 italic mt-4">— Robert Collier</p>
+          </div>
+
+            {/* Right section - Globe */}
+            <div className="h-[400px] md:h-[500px] relative rounded-2xl overflow-hidden">
+              {showBackgroundEffects && (
+                <World 
+                  globeConfig={globeConfig} 
+                  data={sampleArcs} 
+                />
+              )}
+            </div>
+          </div>
     
-    
-
-        ) 
-
-
-
-
-
-      
-}
+        </div>
+      ) 
+    }

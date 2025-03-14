@@ -43,55 +43,56 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    try {
-      const session: Session | null = await getServerSession(authOptions);
-      
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { message: 'Unauthorized' },
-          { status: 401 }
-        );
-      }
-  
-      const { name, categoryId } = await request.json();
-      
-  
-      // First, create or find the skill
-      const skill = await prisma.skill.upsert({
-        where: {
-            name_categoryId: {
-              name,
-              categoryId,
-            },
-        },
-        create: {
-          name,
-          categoryId,
-        },
-        update: {},
-      });
-  
-      // Then, create the user skill association
-      const userSkill = await prisma.userSkill.create({
-        data: {
-          userId: session.user.id,
-          skillId: skill.id,
-          categoryId,
-        },
-        include: {
-          skill: true,
-        },
-      });
-  
-      return NextResponse.json(userSkill);
-    } catch (error) {
-      console.log('Error adding skill:', error);
+  try {
+    const session: Session | null = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { message: 'Internal server error' },
-        { status: 500 }
+        { message: 'Unauthorized' },
+        { status: 401 }
       );
     }
+
+    const { name, categoryId, level, description } = await request.json();
+    
+    // First, create or find the skill
+    const skill = await prisma.skill.upsert({
+      where: {
+          name_categoryId: {
+            name,
+            categoryId,
+          },
+      },
+      create: {
+        name,
+        categoryId,
+      },
+      update: {},
+    });
+
+    // Then, create the user skill association with level and description
+    const userSkill = await prisma.userSkill.create({
+      data: {
+        userId: session.user.id,
+        skillId: skill.id,
+        categoryId,
+        level: level || "Level 1",
+        description,
+      },
+      include: {
+        skill: true,
+      },
+    });
+
+    return NextResponse.json(userSkill);
+  } catch (error) {
+    console.log('Error adding skill:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
   }
+}
 
 export async function DELETE(request: Request){
     try{
@@ -127,4 +128,42 @@ export async function DELETE(request: Request){
 
     
 
+  }
+
+  export async function PUT(request: Request) {
+    try {
+      const session: Session | null = await getServerSession(authOptions);
+      
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { message: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+  
+      const { id, level, description } = await request.json();
+      
+      // Update the user skill
+      const userSkill = await prisma.userSkill.update({
+        where: {
+          id: id,
+          userId: session.user.id, // Ensure the user owns this skill
+        },
+        data: {
+          level,
+          description,
+        },
+        include: {
+          skill: true,
+        },
+      });
+  
+      return NextResponse.json(userSkill);
+    } catch (error) {
+      console.log('Error updating skill:', error);
+      return NextResponse.json(
+        { message: 'Internal server error' },
+        { status: 500 }
+      );
+    }
   }

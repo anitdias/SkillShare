@@ -42,8 +42,8 @@ export default function RadialGraph({ userSkills }: { userSkills: UserSkill[] })
       <RadarChart
         cx={150}
         cy={150}
-        outerRadius={100}
-        width={300}
+        outerRadius={110}
+        width={310}
         height={300}
         data={categoryData}
       >

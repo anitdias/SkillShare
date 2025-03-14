@@ -59,6 +59,8 @@ model UserSkill {
   userId             String
   skillId            String
   categoryId         String
+  level              String   @default("Level 1")
+  description        String?
   validatedByManager Boolean  @default(false)
   
   user       User          @relation(fields: [userId], references: [id])
@@ -106,10 +108,11 @@ model SkillWishlist {
   id          String    @id @default(uuid()) @db.Uuid
   userId      String    
   skillName   String
-  categoryId         String    
+  categoryId  String    
+  description String?
   createdAt   DateTime  @default(now())
   user        User      @relation(fields: [userId], references: [id])
-  category   SkillCategory @relation(fields: [categoryId], references: [id])
+  category    SkillCategory @relation(fields: [categoryId], references: [id])
 }
 
 model Roadmap {
