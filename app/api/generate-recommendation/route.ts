@@ -40,9 +40,15 @@ export async function POST(req: NextRequest) {
         Provide the response in **valid JSON format** with nothing else but the following structure(do not put any other header as it will cause parsing issue):
 
         {
-        "skills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
-        "summary": "A concise and short explanation of why these skills are valuable and how they align with my current expertise and aspirations."
+            "skills": {
+                "skill1": "Summary of why skill1 is valuable and how it aligns with my expertise and aspirations.",
+                "skill2": "Summary of why skill2 is valuable and how it aligns with my expertise and aspirations.",
+                "skill3": "Summary of why skill3 is valuable and how it aligns with my expertise and aspirations.",
+                "skill4": "Summary of why skill4 is valuable and how it aligns with my expertise and aspirations.",
+                "skill5": "Summary of why skill5 is valuable and how it aligns with my expertise and aspirations."
+            }
         }
+
 `
   
       const response = await openai.chat.completions.create({

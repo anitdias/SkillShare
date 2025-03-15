@@ -20,6 +20,7 @@ import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 import { Tabs } from "@/components/ui/tabs";
 import { GlowingStarsBackgroundCard, GlowingStarsTitle, GlowingStarsDescription } from "@/components/ui/glowing-stars";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
+import {InfiniteMovingCards} from "@/components/ui/infinite-moving-cards";
 import { globeConfig, sampleArcs } from "@/lib/globe_data";
 import dynamic from 'next/dynamic'
 const World = dynamic(() => import('@/components/ui/globe'), {
@@ -73,10 +74,12 @@ export default function ProfilePage() {
   const [newSkill, setNewSkill] = useState({ name: '', categoryId: '', level: 'Level 1', description: '' });
   const [newWishlistItem, setNewWishlistItem] = useState('');
   const [newWishlistDescription, setNewWishlistDescription] = useState('');
-  // const [recommendation, setRecommendation] = useState<{ skills: string[]; summary: string }>({
-  //   skills: [],
-  //   summary: "",
-  // });
+  const [recommendation, setRecommendation] = useState<{ skills: Record<string, string> }>({
+    skills: {},
+  });
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [recommendationKey, setRecommendationKey] = useState(0);
+  
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [expandedWishlist, setExpandedWishlist] = useState<string | null>(null);
@@ -148,10 +151,11 @@ export default function ProfilePage() {
           ]);
     
           setUserSkills(skillData.skills); // Extract skills from API response
-          // const recommendation = skillData.recommendation
-          //                       ? JSON.parse(skillData.recommendation)
-          //                       : { skills: [], summary: "" };
-          // setRecommendation(recommendation); // Set recommendation
+          const recommendation = skillData.recommendation
+            ? JSON.parse(skillData.recommendation)
+            : { skills: {} };
+
+          setRecommendation(recommendation);
           setWishlist(wishlist);
         }
       } catch (error) {
@@ -334,33 +338,44 @@ export default function ProfilePage() {
     }
       };
     
-      // const fetchRecommendation = async () => {
-      //   try {
-      //     // Extract skill names from userSkills and wishlist
-      //     const skills = userSkills.map((skill) => skill.skill.name);
-      //     const wishlistSkills = wishlist.map((item) => item.skillName);
+      const fetchRecommendation = async () => {
+        try {
+          setIsLoadingRecommendations(true);
+          // Extract skill names from userSkills and wishlist
+          const skills = userSkills.map((skill) => skill.skill.name);
+          const wishlistSkills = wishlist.map((item) => item.skillName);
       
-      //     const response = await fetch("/api/generate-recommendation", {
-      //       method: "POST",
-      //       headers: { "Content-Type": "application/json" },
-      //       body: JSON.stringify({ skills, wishlistSkills }),
-      //     });
+          const response = await fetch("/api/generate-recommendation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ skills, wishlistSkills }),
+          });
       
-      //     if (!response.ok) {
-      //       const errorData = await response.json();
-      //       console.error("Error fetching recommendation:", errorData);
-      //       return;
-      //     }
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error("Error fetching recommendation:", errorData);
+            return;
+          }
       
-      //     const data = await response.json();
-      //     const recommendation = data.recommendation
-      //                           ? JSON.parse(data.recommendation)
-      //                           : { skills: [], summary: "" };
-      //     setRecommendation(recommendation);
-      //   } catch (err) {
-      //     console.error("Error fetching recommendation:", err);
-      //   }
-      // };
+          const data = await response.json();
+          try {
+            const parsedRecommendation = typeof data.recommendation === 'string' 
+              ? JSON.parse(data.recommendation) 
+              : data.recommendation;
+            
+            setRecommendation(parsedRecommendation);
+            // Increment the key to force a re-render of the InfiniteMovingCards component
+            setRecommendationKey(prev => prev + 1);
+          } catch (err) {
+            console.error("Error parsing recommendation:", err);
+          }
+        } catch (err) {
+          console.error("Error fetching recommendation:", err);
+        } finally {
+          setIsLoadingRecommendations(false);
+        }
+      };
+      
 
       const optimizedTabs = useMemo(() => {
         // Process tabs in chunks to avoid blocking the main thread
@@ -382,7 +397,7 @@ export default function ProfilePage() {
                       console.log('Opening add skill form for category:', category.id);
                       setShowAddSkillForm({set: true, categoryId: category.id});
                     }}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-2"
+                    className="border border-blue-500 hover:bg-gray-800 text-white rounded-full p-2 mt-10 transition duration-300 ease-in-out"
                   >
                     <LucidePlus size={20} />
                   </Button>
@@ -452,7 +467,7 @@ export default function ProfilePage() {
                       console.log('Opening wishlist form for category:', category.id);
                       setShowWishlistForm({set: true, categoryId: category.id});
                     }}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-2 mt-10"
+                    className="border border-blue-500 hover:bg-gray-800 text-white rounded-full p-2 mt-10 transition duration-300 ease-in-out"
                   >
                     <LucidePlus size={20} />
                   </Button>
@@ -521,14 +536,14 @@ export default function ProfilePage() {
     
       if(status === 'loading' || isLoading){
         return(
-          <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444]">
+          <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-neutral-950">
           {/* Animated Background Overlay */}
           <motion.div
             className="absolute inset-0 opacity-20"
             animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
             transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
             style={{
-              backgroundImage: "radial-gradient(circle at center, #3b3b3b 0%, transparent 80%)",
+              backgroundImage: "radial-gradient(circle at center,rgb(0, 0, 0) 0%, transparent 80%)",
               backgroundSize: "200% 200%",
             }}
           />
@@ -862,7 +877,7 @@ export default function ProfilePage() {
                     <textarea
                       value={editingSkill.description}
                       onChange={(e) => setEditingSkill({...editingSkill, description: e.target.value})}
-                      placeholder="Enter skill description"
+                      placeholder="Enter skill description/ Your Skill Journey"
                       className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
                       rows={3}
                     />
@@ -912,6 +927,54 @@ export default function ProfilePage() {
                   globeConfig={globeConfig} 
                   data={sampleArcs} 
                 />
+              )}
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto mt-16 mb-12">
+            <div className="flex flex-col items-center">
+              <h2 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mt-10">
+                Recommended Skills
+              </h2>
+              
+              <div className="w-full flex justify-end mb-4">
+                <Button
+                  onClick={fetchRecommendation}
+                  className="border border-blue-500 text-white px-4 py-2 rounded-lg"
+                  disabled={isLoadingRecommendations}
+                >
+                  {isLoadingRecommendations ? (
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-2"></div>
+                      Generating...
+                    </div>
+                  ) : (
+                    Object.keys(recommendation.skills).length > 0 ? "Refresh Recommendations" : "Generate Recommendations"
+                  )}
+                </Button>
+              </div>
+              
+              {Object.keys(recommendation.skills).length > 0 ? (
+                <div className="w-full">
+                  <InfiniteMovingCards
+                    key={recommendationKey} // Add a key to force re-render
+                    items={Object.entries(recommendation.skills).map(([skill, summary]) => ({
+                      quote: summary,
+                      name: skill,
+                      title: "Recommended Skill"
+                    }))}
+                    direction="left"
+                    speed="slow"
+                    pauseOnHover={true}
+                    className="py-4"
+                  />
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-[#2c3e50] to-[#0a66c2] backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-2xl w-full shadow-xl">
+                  <p className="text-white text-center text-lg">
+                    No recommendations yet. Click Generate Recommendations to discover skills that complement your profile.
+                  </p>
+                </div>
               )}
             </div>
           </div>
