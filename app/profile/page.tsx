@@ -15,13 +15,12 @@ import {DropdownItem,
   DropdownMenu,
   Avatar,
 } from "@heroui/react";
-// import { BackgroundBeams } from "@/components/ui/background-beams";
+import { BackgroundBeams } from "@/components/ui/background-beams";
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 import { Tabs } from "@/components/ui/tabs";
 import { GlowingStarsBackgroundCard, GlowingStarsTitle, GlowingStarsDescription } from "@/components/ui/glowing-stars";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import {InfiniteMovingCards} from "@/components/ui/infinite-moving-cards";
-import {AuroraBackground} from "@/components/ui/aurora-background";
 import { globeConfig, sampleArcs } from "@/lib/globe_data";
 import dynamic from 'next/dynamic'
 const World = dynamic(() => import('@/components/ui/globe'), {
@@ -648,10 +647,9 @@ export default function ProfilePage() {
           
           {showBackgroundEffects && (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
-             <></> 
+              <BackgroundBeams />
             </div>
           )}
-          <AuroraBackground>
           <div className="grid grid-cols-1 md:grid-cols-2 ml-4 md:ml-12 mt-20 md:mt-2">
           <AnimatedTestimonials
             testimonials={testimonials.map((t) => ({
@@ -667,7 +665,6 @@ export default function ProfilePage() {
           <div className="h-[70rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full  items-start justify-start my-10">
             <Tabs tabs={optimizedTabs} />
           </div>
-          </AuroraBackground>
 
           {showAddSkillForm.set && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
