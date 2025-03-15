@@ -6,7 +6,9 @@ export default <Config>{
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{ts,tsx}",
   ],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
@@ -16,6 +18,7 @@ export default <Config>{
       animation: {
         scroll:
           "scroll var(--animation-duration, 40s) var(--animation-direction, forwards) linear infinite",
+        aurora: "aurora 60s linear infinite",
       },
       keyframes: {
         scroll: {
@@ -23,11 +26,19 @@ export default <Config>{
             transform: "translate(calc(-50% - 0.5rem))",
           },
         },
+        aurora: {
+          from: {
+            backgroundPosition: "50% 50%, 50% 50%",
+          },
+          to: {
+            backgroundPosition: "350% 50%, 350% 50%",
+          },
+        },
       },
     },
   },
   plugins: [
-    plugin(({ addBase, theme }: { addBase: (styles: Record<string, Record<string, string>>) => void; theme: (path: string) => unknown }) => {
+    plugin(({ addBase, theme }) => {
       const colors = theme("colors") as Record<string, string | Record<string, string>>;
       const flattenedColors: Record<string, string> = {};
 
@@ -40,7 +51,6 @@ export default <Config>{
           }
         }
       };
-      
 
       flattenColors(colors);
 
