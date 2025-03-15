@@ -646,11 +646,11 @@ export default function ProfilePage() {
             </div>
           </nav>
           
-          {/* {showBackgroundEffects && (
+          {showBackgroundEffects && (
             <div className="absolute inset-0 w-full h-full overflow-hidden">
-              
+             <></> 
             </div>
-          )} */}
+          )}
           <AuroraBackground>
           <div className="grid grid-cols-1 md:grid-cols-2 ml-4 md:ml-12 mt-20 md:mt-2">
           <AnimatedTestimonials
