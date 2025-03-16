@@ -755,7 +755,7 @@ export default function ProfilePage() {
               name: t.name ?? "Anonymous", // Provide a default value
             }))}
           />
-            <div className="ml-12 mt-5">
+            <div className="ml-12">
             <RadialGraph userSkills={userSkills} />
             </div>
           </div>
