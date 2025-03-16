@@ -18,7 +18,7 @@ import {DropdownItem,
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
 import { Tabs } from "@/components/ui/tabs";
-import { GlowingStarsBackgroundCard, GlowingStarsTitle, GlowingStarsDescription } from "@/components/ui/glowing-stars";
+import { GlowingStarsBackgroundCard, GlowingStarsTitle } from "@/components/ui/glowing-stars";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import {InfiniteMovingCards} from "@/components/ui/infinite-moving-cards";
 import { globeConfig, sampleArcs } from "@/lib/globe_data";
@@ -79,7 +79,7 @@ export default function ProfilePage() {
   });
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [recommendationKey, setRecommendationKey] = useState(0);
-  
+  const [addSkillStep, setAddSkillStep] = useState(1);
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [expandedWishlist, setExpandedWishlist] = useState<string | null>(null);
@@ -167,21 +167,21 @@ export default function ProfilePage() {
     
 
     const handleAddSkill = async (e?: React.FormEvent) => {
-      if(e) {
-        e.preventDefault();
-      }
+      if (e) e.preventDefault();
+      
       try {
         const response = await fetch('/api/skills', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSkill),
         });
-    
+  
         if (response.ok) {
           const skill = await response.json();
           setUserSkills([...userSkills, skill]);
           setNewSkill({ name: '', categoryId: '', level: 'Level 1', description: '' });
           setShowAddSkillForm({set: false, categoryId: ''});
+          setAddSkillStep(1); // Reset to first step for next time
         }
       } catch (error) {
         console.error('Error adding skill:', error);
@@ -388,70 +388,112 @@ export default function ProfilePage() {
             title: category.name,
             value: category.name,
             content: (
-              <div className="w-full bg-neutral-950 shadow-xl overflow-hidden relative h-auto rounded-2xl p-10 ">
+              <div className="w-full bg-neutral-950 overflow-hidden relative h-auto rounded-2xl p-8">
+                
                 {/* Skills Section with Add Button */}
-                <div className="flex justify-between items-center">
-                  <h1 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono">Skills</h1>
-                  <Button 
-                    onClick={() => {
-                      console.log('Opening add skill form for category:', category.id);
-                      setShowAddSkillForm({set: true, categoryId: category.id});
-                    }}
-                    className="border border-blue-500 hover:bg-gray-800 text-white rounded-full p-2 mt-10 transition duration-300 ease-in-out"
-                  >
-                    <LucidePlus size={20} />
-                  </Button>
+                <div className="flex justify-between items-center relative z-10">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Category Expertise</span>
+                    <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">Skills</h1>
+                  </div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      onClick={() => {
+                        console.log('Opening add skill form for category:', category.id);
+                        setShowAddSkillForm({set: true, categoryId: category.id});
+                      }}
+                      className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 hover:border-blue-400 text-white rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-blue-500/20"
+                    >
+                      <LucidePlus size={20} />
+                    </Button>
+                  </motion.div>
                 </div>
-                <hr className="text-gray-600 mt-2"/>
-                <div className="w-full flex flex-col mb-5">
+                
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
+                
+                <div className="w-full flex flex-col mb-8">
                   <div className="flex-1 overflow-hidden">
                     {(() => {
                       const filteredSkills = userSkills.filter(skill => skill.categoryId === category.id);
                       if (filteredSkills.length > 0) {
                         return (
-                          <div className="carousel-container h-full">
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4 }}
+                            className="carousel-container h-full py-3"
+                          >
                             <Carousel
-                            items={filteredSkills.map((skill, idx) => (
-                              <Card 
-                                key={skill.id}
-                                card={{
-                                  title: skill.skill.name,
-                                  category: skill.level || "Level 1",
-                                  src: "", 
-                                  content: (
-                                    <GlowingStarsBackgroundCard
-                                      className="cursor-pointer hover:scale-105 transition-transform"
-                                    >
-                                      <div className="flex justify-start">
-                                        <GlowingStarsTitle>{skill.skill.name}</GlowingStarsTitle>
-                                      </div>
-                                      <div className="flex justify-between items-end">
-                                        <GlowingStarsDescription>{skill.level || "Level 1"}</GlowingStarsDescription>
-                                        <div onClick={() => {
-                                        setExpandedSkill(skill.id);
-                                        setEditingSkill({ 
-                                          level: skill.level || "Level 1", 
-                                          description: skill.description || "" 
-                                        });
-                                      }} className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.1)] flex items-center justify-center">
-                                          <Icon />
-                                        </div>
-                                      </div>                          
-                                    </GlowingStarsBackgroundCard>
-                                  )
-                                }}
-                                index={idx}
-                                layout={false}
-                              />
-                            ))}
-                            initialScroll={0}
-                          />
-                          </div>
+                              items={filteredSkills.map((skill, idx) => (
+                                <Card 
+                                  key={skill.id}
+                                  card={{
+                                    title: skill.skill.name,
+                                    category: skill.level || "Level 1",
+                                    src: "", 
+                                    content: (
+                                      <motion.div
+                                        whileHover={{ scale: 1.03, y: -5 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                      >
+                                        <GlowingStarsBackgroundCard
+                                          className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-blue-500/20"
+                                        >
+                                          <div className="flex justify-start">
+                                            <GlowingStarsTitle>{skill.skill.name}</GlowingStarsTitle>
+                                          </div>
+                                          <div className="flex justify-between items-end">
+                                            <div className="flex flex-col">
+                                            <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                                {skill.level || "Level 1"}</span>
+                                              {skill.validatedByManager && (
+                                                <span className="text-xs text-emerald-400 mt-1 flex items-center">
+                                                  <span className="w-2 h-2 bg-emerald-400 rounded-full mr-1"></span>
+                                                  Validated
+                                                </span>
+                                              )}
+                                            </div>
+                                            <motion.div 
+                                              onClick={() => {
+                                                setExpandedSkill(skill.id);
+                                                setEditingSkill({ 
+                                                  level: skill.level || "Level 1", 
+                                                  description: skill.description || "" 
+                                                });
+                                              }} 
+                                              className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.15)] flex items-center justify-center backdrop-blur-sm hover:bg-[hsla(0,0%,100%,.25)] transition-all duration-300"
+                                              whileHover={{ scale: 1.1 }}
+                                              whileTap={{ scale: 0.95 }}
+                                            >
+                                              <Icon />
+                                            </motion.div>
+                                          </div>                          
+                                        </GlowingStarsBackgroundCard>
+                                      </motion.div>
+                                    )
+                                  }}
+                                  index={idx}
+                                  layout={false}
+                                />
+                              ))}
+                              initialScroll={0}
+                            />
+                          </motion.div>
                         );
                       } else {
                         return (
-                          <div className="h-full flex items-center justify-center">
-                            <p className="text-white text-lg">No skills added yet in this category</p>
+                          <div className="h-32 flex items-center justify-center my-4">
+                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700/30 shadow-lg text-center">
+                              <p className="text-gray-400 text-lg mb-3">No skills added yet in this category</p>
+                              <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => setShowAddSkillForm({set: true, categoryId: category.id})}
+                                className="text-blue-400 text-sm hover:text-blue-300 transition-colors"
+                              >
+                                Add your first skill
+                              </motion.button>
+                            </div>
                           </div>
                         );
                       }
@@ -460,26 +502,38 @@ export default function ProfilePage() {
                 </div>
                 
                 {/* Future Skills Section - Same layout as Skills section */}
-                <div className="flex justify-between items-center">
-                  <h1 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mt-10">Future Skills</h1>
-                  <Button 
-                    onClick={() => {
-                      console.log('Opening wishlist form for category:', category.id);
-                      setShowWishlistForm({set: true, categoryId: category.id});
-                    }}
-                    className="border border-blue-500 hover:bg-gray-800 text-white rounded-full p-2 mt-10 transition duration-300 ease-in-out"
-                  >
-                    <LucidePlus size={20} />
-                  </Button>
+                <div className="flex justify-between items-center relative z-10 mt-6">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider mb-1">Growth Opportunities</span>
+                    <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">Future Skills</h1>
+                  </div>
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      onClick={() => {
+                        console.log('Opening wishlist form for category:', category.id);
+                        setShowWishlistForm({set: true, categoryId: category.id});
+                      }}
+                      className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border border-purple-500/50 hover:border-purple-400 text-white rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
+                    >
+                      <LucidePlus size={20} />
+                    </Button>
+                  </motion.div>
                 </div>
-                <hr className="text-gray-600 mt-2"/>
+                
+                <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
+                
                 <div className="w-full flex h-[100%] flex-col">
                   <div className="flex-1 overflow-hidden">
                     {(() => {
                       const filteredWishlist = wishlist.filter(item => item.categoryId === category.id);
                       if (filteredWishlist.length > 0) {
                         return (
-                          <div className="carousel-container h-full relative z-10">
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.1 }}
+                            className="carousel-container h-full relative z-10 py-3"
+                          >
                             <Carousel
                               items={filteredWishlist.map((item, idx) => (
                                 <Card 
@@ -489,22 +543,36 @@ export default function ProfilePage() {
                                     category: "Wishlist",
                                     src: "",
                                     content: (
-                                      <GlowingStarsBackgroundCard
-                                        className="cursor-pointer hover:scale-105 transition-transform"
+                                      <motion.div
+                                        whileHover={{ scale: 1.03, y: -5 }}
+                                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
                                       >
-                                        <div className="flex justify-start">
-                                          <GlowingStarsTitle>{item.skillName}</GlowingStarsTitle>
-                                        </div>
-                                        <div className="flex justify-between items-end">
-                                          <GlowingStarsDescription>Future Skill</GlowingStarsDescription>
-                                          <div onClick={() => {
-                                          setExpandedWishlist(item.id);
-                                          setEditingWishlistDescription(item.description || "");
-                                        }} className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.1)] flex items-center justify-center">
-                                            <Icon />
+                                        <GlowingStarsBackgroundCard
+                                          className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-purple-500/20"
+                                        >
+                                          <div className="flex justify-start">
+                                            <GlowingStarsTitle>{item.skillName}</GlowingStarsTitle>
                                           </div>
-                                        </div>                          
-                                      </GlowingStarsBackgroundCard>
+                                          <div className="flex justify-between items-end">
+                                            <div className="flex items-center">
+                                              <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                                Future Skill
+                                              </span>
+                                            </div>
+                                            <motion.div 
+                                              onClick={() => {
+                                                setExpandedWishlist(item.id);
+                                                setEditingWishlistDescription(item.description || "");
+                                              }} 
+                                              className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.15)] flex items-center justify-center backdrop-blur-sm hover:bg-[hsla(0,0%,100%,.25)] transition-all duration-300"
+                                              whileHover={{ scale: 1.1 }}
+                                              whileTap={{ scale: 0.95 }}
+                                            >
+                                              <Icon />
+                                            </motion.div>
+                                          </div>                          
+                                        </GlowingStarsBackgroundCard>
+                                      </motion.div>
                                     )
                                   }}
                                   index={idx}
@@ -513,12 +581,22 @@ export default function ProfilePage() {
                               ))}
                               initialScroll={0}
                             />
-                          </div>
+                          </motion.div>
                         );
                       } else {
                         return (
-                          <div className="h-full flex items-center justify-center bg-neutral-950 relative z-10 mb-72">
-                            <p className="text-white text-lg">No future skills added yet in this category </p>
+                          <div className="h-32 flex items-center justify-center my-4 bg-neutral-950 relative z-10 mb-72">
+                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700/30 shadow-lg text-center">
+                              <p className="text-gray-400 text-lg mb-3">No future skills added yet in this category</p>
+                              <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                onClick={() => setShowWishlistForm({set: true, categoryId: category.id})}
+                                className="text-purple-400 text-sm hover:text-purple-300 transition-colors"
+                              >
+                                Add your first future skill
+                              </motion.button>
+                            </div>
                           </div>
                         );
                       }
@@ -687,59 +765,198 @@ export default function ProfilePage() {
           </div>
 
           {showAddSkillForm.set && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl text-white font-semibold">Add Skill</h2>
-                  <Button 
-                    onClick={() => setShowAddSkillForm({set: false, categoryId: ''})}
-                    className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
-                  >
-                    <LucideX size={16} />
-                  </Button>
-                </div>
-                <form onSubmit={handleAddSkill} className="space-y-4">
-                <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Skill Name</label>
-                      <Input
-                        value={newSkill.name}
-                        onChange={(e) => setNewSkill({...newSkill, name: e.target.value, categoryId: showAddSkillForm.categoryId})}
-                        placeholder="Enter skill name"
-                        className="w-full bg-gray-800 border-gray-700 text-white"
-                        required
-                      />
-                    </div>
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-md w-full shadow-2xl overflow-hidden"
+              >
+                {/* Header with gradient background */}
+                <div className="relative bg-neutral-950 p-6">
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full opacity-40"
+                    style={{
+                      backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                      backgroundSize: "10px 10px"
+                    }}
+                  />
+                  
+                  <div className="flex justify-between items-center relative z-10">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Level</label>
-                      <select
-                        value={newSkill.level}
-                        onChange={(e) => setNewSkill({...newSkill, level: e.target.value})}
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
-                        required
-                      >
-                        <option value="Level 1">Level 1</option>
-                        <option value="Level 2">Level 2</option>
-                        <option value="Level 3">Level 3</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                      <textarea
-                        value={newSkill.description}
-                        onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
-                        placeholder="Enter skill description"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
-                        rows={3}
-                      />
+                      <div className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-1">New Skill</div>
+                      <h2 className="text-2xl text-white font-bold">
+                        {addSkillStep === 1 ? "Skill Details" : "Skill Journey"}
+                      </h2>
                     </div>
                     <Button 
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      onClick={() => {
+                        setShowAddSkillForm({set: false, categoryId: ''});
+                        setAddSkillStep(1); // Reset to first step when closing
+                      }}
+                      className="bg-white/10 hover:bg-white/20 text-white rounded-full p-1 transition-all duration-200"
                     >
-                      Add Skill
+                      <LucideX size={16} />
                     </Button>
-                </form>
-              </div>
+                  </div>
+                </div>
+                
+                {/* Content area */}
+                <div className="p-6">
+                  <div className="relative overflow-hidden" style={{ height: "280px" }}>
+                    {/* Step 1: Skill Name and Level */}
+                    <motion.div 
+                      className="absolute w-full"
+                      initial={{ x: addSkillStep === 1 ? 0 : "-100%" }}
+                      animate={{ x: addSkillStep === 1 ? 0 : "-100%" }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    >
+                      <div className="space-y-5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Skill Name</label>
+                          <Input
+                            value={newSkill.name}
+                            onChange={(e) => setNewSkill({...newSkill, name: e.target.value, categoryId: showAddSkillForm.categoryId})}
+                            placeholder="Enter skill name"
+                            className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <label className="text-sm font-medium text-gray-300">Proficiency Level</label>
+                            <span className="text-sm text-blue-400 font-medium">{newSkill.level}</span>
+                          </div>
+                          
+                          <div className="relative">
+                            <div className="h-2 bg-gray-700 rounded-full w-full">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ 
+                                  width: newSkill.level === "Level 1" ? "33%" : 
+                                        newSkill.level === "Level 2" ? "66%" : "100%" 
+                                }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600"
+                              />
+                            </div>
+                            
+                            <div className="flex justify-between mt-2">
+                              <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setNewSkill({...newSkill, level: "Level 1"})}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                  newSkill.level === "Level 1" 
+                                    ? "bg-blue-500 text-white" 
+                                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                                }`}
+                              >
+                                1
+                              </motion.button>
+                              <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setNewSkill({...newSkill, level: "Level 2"})}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                  newSkill.level === "Level 2" 
+                                    ? "bg-blue-500 text-white" 
+                                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                                }`}
+                              >
+                                2
+                              </motion.button>
+                              <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setNewSkill({...newSkill, level: "Level 3"})}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                                  newSkill.level === "Level 3" 
+                                    ? "bg-blue-500 text-white" 
+                                    : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                                }`}
+                              >
+                                3
+                              </motion.button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <motion.div className="pt-4" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button 
+                            onClick={() => {
+                              if (newSkill.name.trim()) {
+                                setAddSkillStep(2);
+                              }
+                            }}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
+                            disabled={!newSkill.name.trim()}
+                          >
+                            Next
+                          </Button>
+                        </motion.div>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Step 2: Skill Description */}
+                    <motion.div 
+                      className="absolute w-full"
+                      initial={{ x: addSkillStep === 2 ? 0 : "100%" }}
+                      animate={{ x: addSkillStep === 2 ? 0 : "100%" }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    >
+                      <div className="space-y-5">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-2">Your Skill Journey</label>
+                          <div className="relative">
+                            <textarea
+                              value={newSkill.description}
+                              onChange={(e) => setNewSkill({...newSkill, description: e.target.value})}
+                              placeholder="Share your experience and growth with this skill..."
+                              className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-3 text-white min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                              rows={6}
+                            />
+                            <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                              {newSkill.description?.length || 0}/500
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex space-x-3 pt-2">
+                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button 
+                              onClick={() => setAddSkillStep(1)}
+                              className="bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200"
+                            >
+                              Back
+                            </Button>
+                          </motion.div>
+                          
+                          <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button 
+                              onClick={handleAddSkill}
+                              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
+                            >
+                              Add Skill
+                            </Button>
+                          </motion.div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+                
+                {/* Progress Indicator */}
+                <div className="bg-gray-900/50 p-4 border-t border-gray-800">
+                  <div className="flex justify-center space-x-2">
+                    <div 
+                      className={`h-2 w-12 rounded-full ${addSkillStep === 1 ? 'bg-blue-500' : 'bg-gray-600'} transition-colors duration-300`}
+                    ></div>
+                    <div 
+                      className={`h-2 w-12 rounded-full ${addSkillStep === 2 ? 'bg-blue-500' : 'bg-gray-600'} transition-colors duration-300`}
+                    ></div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )}
 
@@ -866,61 +1083,161 @@ export default function ProfilePage() {
         )}
           
           {expandedSkill && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-neutral-950 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl text-white font-semibold">
-                    {userSkills.find(s => s.id === expandedSkill)?.skill.name}
-                  </h2>
-                  <Button 
-                    onClick={() => setExpandedSkill(null)}
-                    className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
-                  >
-                    <LucideX size={16} />
-                  </Button>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Level</label>
-                    <select
-                      value={editingSkill.level}
-                      onChange={(e) => setEditingSkill({...editingSkill, level: e.target.value})}
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
-                    >
-                      <option value="Level 1">Level 1</option>
-                      <option value="Level 2">Level 2</option>
-                      <option value="Level 3">Level 3</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                    <textarea
-                      value={editingSkill.description}
-                      onChange={(e) => setEditingSkill({...editingSkill, description: e.target.value})}
-                      placeholder="Enter skill description/ Your Skill Journey"
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="flex space-x-2 pt-2">
-                  <Button 
-                    onClick={() => handleUpdateSkill(expandedSkill!, editingSkill.level, editingSkill.description)}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                  >
-                    Save Changes
-                  </Button>
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-md w-full shadow-2xl overflow-hidden"
+              >
+                {/* Header with gradient background */}
+                <div className="relative bg-neutral-950 p-6">
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full opacity-40"
+                    style={{
+                      backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                      backgroundSize: "10px 10px"
+                    }}
+                  />
+                  
+                  <div className="flex justify-between items-center relative z-10">
+                    <div>
+                      <div className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-1">Professional Skill</div>
+                      <h2 className="text-2xl text-white font-bold">
+                        {userSkills.find(s => s.id === expandedSkill)?.skill.name}
+                      </h2>
+                    </div>
                     <Button 
-                      onClick={() => {
-                        handleDeleteSkill(expandedSkill);
-                        setExpandedSkill(null);
-                      }}
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => setExpandedSkill(null)}
+                      className="bg-white/10 hover:bg-white/20 text-white rounded-full p-1 transition-all duration-200"
                     >
-                      Remove
+                      <LucideX size={16} />
                     </Button>
                   </div>
                 </div>
-              </div>
+                
+                {/* Content area */}
+                <div className="p-6">
+                  {/* Skill level with visual indicator */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-medium text-gray-300">Proficiency Level</label>
+                      <span className="text-sm text-blue-400 font-medium">{editingSkill.level}</span>
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="h-2 bg-gray-700 rounded-full w-full">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ 
+                            width: editingSkill.level === "Level 1" ? "33%" : 
+                                  editingSkill.level === "Level 2" ? "66%" : "100%" 
+                          }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600"
+                        />
+                      </div>
+                      
+                      <div className="flex justify-between mt-2">
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setEditingSkill({...editingSkill, level: "Level 1"})}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            editingSkill.level === "Level 1" 
+                              ? "bg-blue-500 text-white" 
+                              : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                          }`}
+                        >
+                          1
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setEditingSkill({...editingSkill, level: "Level 2"})}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            editingSkill.level === "Level 2" 
+                              ? "bg-blue-500 text-white" 
+                              : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                          }`}
+                        >
+                          2
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setEditingSkill({...editingSkill, level: "Level 3"})}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                            editingSkill.level === "Level 3" 
+                              ? "bg-blue-500 text-white" 
+                              : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                          }`}
+                        >
+                          3
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Skill journey */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Your Skill Journey</label>
+                    <div className="relative">
+                      <textarea
+                        value={editingSkill.description}
+                        onChange={(e) => setEditingSkill({...editingSkill, description: e.target.value})}
+                        placeholder="Share your experience and growth with this skill..."
+                        className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-3 text-white min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                        rows={4}
+                      />
+                      <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                        {editingSkill.description?.length || 0}/500
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Action buttons with animations */}
+                  <div className="flex space-x-3 pt-2">
+                    <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button 
+                        onClick={() => handleUpdateSkill(expandedSkill!, editingSkill.level, editingSkill.description)}
+                        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
+                      >
+                        Save Changes
+                      </Button>
+                    </motion.div>
+                    
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button 
+                        onClick={() => {
+                          handleDeleteSkill(expandedSkill);
+                          setExpandedSkill(null);
+                        }}
+                        className="bg-transparent border border-red-500 text-red-500 hover:bg-red-500/10 font-medium py-2 px-4 rounded-lg transition-all duration-200"
+                      >
+                        Remove
+                      </Button>
+                    </motion.div>
+                  </div>
+                </div>
+                
+                {/* Footer with achievement badge */}
+                <div className="bg-gray-900/50 p-4 border-t border-gray-800">
+                  <div className="flex items-center">
+                    <div className="bg-gradient-to-r from-amber-400 to-amber-600 p-2 rounded-full mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <path d="M12 15l-2 5l9-9l-9-9l2 5l-9 9l9-9"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Skill Validation</p>
+                      <p className="text-sm text-white font-medium">
+                        {userSkills.find(s => s.id === expandedSkill)?.validatedByManager 
+                          ? "Validated by management" 
+                          : "Pending validation"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
           )}
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
