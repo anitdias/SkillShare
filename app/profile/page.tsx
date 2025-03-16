@@ -582,6 +582,26 @@ export default function ProfilePage() {
                 {fulltext}
               </h1>
             </div>
+
+            <div className="hidden md:flex items-center space-x-4">
+              <Button 
+                onClick={() => document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                Skills
+              </Button>
+              <Button 
+                onClick={() => document.getElementById('recommendations-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                Recommendations
+              </Button>
+              <Button
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                ORG Goals
+              </Button>
+            </div>
     
             {/* Right Section - Search Bar & Sign Out */}
             <div className="flex items-center gap-4">
@@ -662,7 +682,7 @@ export default function ProfilePage() {
             </div>
           </div>
     
-          <div className="h-[70rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full  items-start justify-start my-10">
+          <div className="h-[70rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full items-start justify-start my-10" id="skills-section">
             <Tabs tabs={optimizedTabs} />
           </div>
 
@@ -770,7 +790,7 @@ export default function ProfilePage() {
 
         {expandedWishlist && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-gradient-to-br from-[#2c3e50] to-[#0a66c2] backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
+            <div className="bg-neutral-950 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl text-white font-semibold">
                   {wishlist.find(w => w.id === expandedWishlist)?.skillName}
@@ -825,7 +845,7 @@ export default function ProfilePage() {
                           setExpandedWishlist(null);
                         }
                       }}
-                      className="flex-1 bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                     >
                       Add to Skills
                     </Button>
@@ -931,9 +951,9 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto mt-16 mb-12">
+          <div className="max-w-7xl mx-auto mt-16 mb-12" id="recommendations-section">
             <div className="flex flex-col items-center">
-              <h2 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mt-10">
+              <h2 className="relative z-10 text-md md:text-5xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono">
                 Recommended Skills
               </h2>
               
