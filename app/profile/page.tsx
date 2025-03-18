@@ -960,84 +960,150 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {showWishlistForm.set && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl text-white font-semibold">Add Future Skill</h2>
-                  <Button 
-                    onClick={() => setShowWishlistForm({set: false, categoryId: ''})}
-                    className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
-                  >
-                    <LucideX size={16} />
-                  </Button>
+{showWishlistForm.set && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-md w-full shadow-2xl overflow-hidden"
+              >
+                {/* Header with gradient background */}
+                <div className="relative bg-neutral-950 p-6">
+                  <div 
+                    className="absolute top-0 left-0 w-full h-full opacity-40"
+                    style={{
+                      backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                      backgroundSize: "10px 10px"
+                    }}
+                  />
+                  
+                  <div className="flex justify-between items-center relative z-10">
+                    <div>
+                      <div className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-1">Wishlist</div>
+                      <h2 className="text-2xl text-white font-bold">Add Future Skill</h2>
+                    </div>
+                    <Button 
+                      onClick={() => setShowWishlistForm({set: false, categoryId: ''})}
+                      className="bg-white/10 hover:bg-white/20 text-white rounded-full p-1 transition-all duration-200"
+                    >
+                      <LucideX size={16} />
+                    </Button>
+                  </div>
                 </div>
-                <form onSubmit={handleAddWishlistItem} className="space-y-4">
-                <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Skill Name</label>
+                
+                {/* Content area */}
+                <div className="p-6">
+                  <form onSubmit={handleAddWishlistItem} className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Skill Name</label>
                       <Input
                         value={newWishlistItem}
                         onChange={(e) => setNewWishlistItem(e.target.value)}
                         placeholder="Enter future skill name"
-                        className="w-full bg-gray-800 border-gray-700 text-white"
+                        className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                      <textarea
-                        value={newWishlistDescription}
-                        onChange={(e) => setNewWishlistDescription(e.target.value)}
-                        placeholder="Enter skill description"
-                        className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
-                        rows={3}
-                      />
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                      <div className="relative">
+                        <textarea
+                          value={newWishlistDescription}
+                          onChange={(e) => setNewWishlistDescription(e.target.value)}
+                          placeholder="Describe what you want to learn about this skill..."
+                          className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-3 text-white min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          rows={4}
+                        />
+                        <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                          {newWishlistDescription?.length || 0}/500
+                        </div>
+                      </div>
                     </div>
-                    <Button 
-                      type="submit"
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                    >
-                      Add Future Skill
-                    </Button>
-                </form>
-              </div>
+                    <motion.div className="pt-4" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button 
+                        type="submit"
+                        className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
+                        disabled={!newWishlistItem.trim()}
+                      >
+                        Add Future Skill
+                      </Button>
+                    </motion.div>
+                  </form>
+                </div>
+              </motion.div>
             </div>
           )}
 
 
         {expandedWishlist && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-neutral-950 backdrop-blur-sm rounded-xl border border-gray-700 p-6 max-w-md w-full shadow-xl">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl text-white font-semibold">
-                  {wishlist.find(w => w.id === expandedWishlist)?.skillName}
-                </h2>
-                <Button 
-                  onClick={() => setExpandedWishlist(null)}
-                  className="bg-transparent hover:bg-gray-700 text-white rounded-full p-1"
-                >
-                  <LucideX size={16} />
-                </Button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                  <textarea
-                    value={editingWishlistDescription}
-                    onChange={(e) => setEditingWishlistDescription(e.target.value)}
-                    placeholder="Enter skill description"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
-                    rows={3}
-                  />
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-md w-full shadow-2xl overflow-hidden"
+            >
+              {/* Header with gradient background */}
+              <div className="relative bg-neutral-950 p-6">
+                <div 
+                  className="absolute top-0 left-0 w-full h-full opacity-40"
+                  style={{
+                    backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                    backgroundSize: "10px 10px"
+                  }}
+                />
+                
+                <div className="flex justify-between items-center relative z-10">
+                  <div>
+                    <div className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-1">Future Skill</div>
+                    <h2 className="text-2xl text-white font-bold">
+                      {wishlist.find(w => w.id === expandedWishlist)?.skillName}
+                    </h2>
+                  </div>
+                  <Button 
+                    onClick={() => setExpandedWishlist(null)}
+                    className="bg-white/10 hover:bg-white/20 text-white rounded-full p-1 transition-all duration-200"
+                  >
+                    <LucideX size={16} />
+                  </Button>
                 </div>
-                <div className="flex flex-col space-y-2 pt-2">
-                <Button 
-                  onClick={() => handleUpdateWishlist(expandedWishlist!, editingWishlistDescription)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                >
-                  Save Changes
-                </Button>
-                  <div className="flex space-x-2">
+              </div>
+              
+              {/* Content area */}
+              <div className="p-6">
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Skill Description</label>
+                  <div className="relative">
+                    <textarea
+                      value={editingWishlistDescription}
+                      onChange={(e) => setEditingWishlistDescription(e.target.value)}
+                      placeholder="Describe what you want to learn about this skill..."
+                      className="w-full bg-gray-800/50 border border-gray-700 rounded-md p-3 text-white min-h-[120px] focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      rows={4}
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                      {editingWishlistDescription?.length || 0}/500
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Action buttons with animations */}
+                <div className="flex space-x-3 pt-2">
+                  <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button 
+                      onClick={() => handleUpdateWishlist(expandedWishlist!, editingWishlistDescription)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
+                    >
+                      Save Changes
+                    </Button>
+                  </motion.div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button 
                       onClick={() => {
                         const wishlistItem = wishlist.find(w => w.id === expandedWishlist);
@@ -1045,10 +1111,13 @@ export default function ProfilePage() {
                           router.push(`/roadmap?skillName=${wishlistItem.skillName}`);
                         }
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
                     >
-                      Roadmap
+                      View Roadmap
                     </Button>
+                  </motion.div>
+                  
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button 
                       onClick={() => {
                         const wishlistItem = wishlist.find(w => w.id === expandedWishlist);
@@ -1056,29 +1125,35 @@ export default function ProfilePage() {
                           handleAddSkillfromWishlist({
                             name: wishlistItem.skillName, 
                             categoryId: wishlistItem.categoryId,
-                            description: editingWishlistDescription // Pass the current edited description
+                            description: editingWishlistDescription
                           });
                           handleDeleteWishlist(expandedWishlist);
                           setExpandedWishlist(null);
                         }
                       }}
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
                     >
                       Add to Skills
                     </Button>
-                  </div>
+                  </motion.div>
+                </div>
+              </div>
+              
+              {/* Footer with remove button */}
+              <div className="bg-gray-900/50 p-4 border-t border-gray-800">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button 
                     onClick={() => {
                       handleDeleteWishlist(expandedWishlist);
                       setExpandedWishlist(null);
                     }}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="w-full bg-transparent border border-red-500 text-red-500 hover:bg-red-500/10 font-medium py-2 rounded-lg transition-all duration-200"
                   >
-                    Remove
+                    Remove from Wishlist
                   </Button>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
           

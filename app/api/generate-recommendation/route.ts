@@ -41,11 +41,11 @@ export async function POST(req: NextRequest) {
 
         {
             "skills": {
-                "skill1": "Summary of why skill1 is valuable and how it aligns with my expertise and aspirations.",
-                "skill2": "Summary of why skill2 is valuable and how it aligns with my expertise and aspirations.",
-                "skill3": "Summary of why skill3 is valuable and how it aligns with my expertise and aspirations.",
-                "skill4": "Summary of why skill4 is valuable and how it aligns with my expertise and aspirations.",
-                "skill5": "Summary of why skill5 is valuable and how it aligns with my expertise and aspirations."
+                "skill1-name": "Summary of why skill1 is valuable and how it aligns with my expertise and aspirations.",
+                "skill2-name": "Summary of why skill2 is valuable and how it aligns with my expertise and aspirations.",
+                "skill3-name": "Summary of why skill3 is valuable and how it aligns with my expertise and aspirations.",
+                "skill4-name": "Summary of why skill4 is valuable and how it aligns with my expertise and aspirations.",
+                "skill5-name": "Summary of why skill5 is valuable and how it aligns with my expertise and aspirations."
             }
         }
 
