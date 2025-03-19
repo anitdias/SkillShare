@@ -85,6 +85,8 @@ export default function ProfilePage() {
   const [expandedWishlist, setExpandedWishlist] = useState<string | null>(null);
   const [editingSkill, setEditingSkill] = useState<{ level: string; description: string }>({ level: '', description: '' });
   const [editingWishlistDescription, setEditingWishlistDescription] = useState('');
+  const [skillsUpdateCounter, setSkillsUpdateCounter] = useState(0);
+  const [wishlistUpdateCounter, setWishlistUpdateCounter] = useState(0);
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -181,7 +183,8 @@ export default function ProfilePage() {
           setUserSkills([...userSkills, skill]);
           setNewSkill({ name: '', categoryId: '', level: 'Level 1', description: '' });
           setShowAddSkillForm({set: false, categoryId: ''});
-          setAddSkillStep(1); // Reset to first step for next time
+          setAddSkillStep(1);
+          setSkillsUpdateCounter(prev => prev + 1); // Reset to first step for next time
         }
       } catch (error) {
         console.error('Error adding skill:', error);
@@ -208,6 +211,7 @@ export default function ProfilePage() {
           setNewWishlistItem('');
           setNewWishlistDescription('');
           setShowWishlistForm({set: false, categoryId: ''});
+          setWishlistUpdateCounter(prev => prev + 1);
         }
       } catch (error) {
         console.error('Error adding wishlist item:', error);
@@ -225,6 +229,7 @@ export default function ProfilePage() {
             if (response.ok) {
               await response.json();
               setWishlist(wishlist => wishlist.filter(object => object.id!== id ));
+              setWishlistUpdateCounter(prev => prev + 1);
               
             }
           } catch (error) {
@@ -245,6 +250,7 @@ export default function ProfilePage() {
             if(response.ok){
                 await response.json();
                 setUserSkills(userSkills => userSkills.filter(object=> object.id!== id))
+                setSkillsUpdateCounter(prev => prev + 1);
             }
         }
         catch (error) {
@@ -289,6 +295,7 @@ export default function ProfilePage() {
               skill.id === id ? updatedSkill : skill
             ));
             setExpandedSkill(null);
+            setSkillsUpdateCounter(prev => prev + 1);
           }
         } catch (error) {
           console.error('Error updating skill:', error);
@@ -309,6 +316,7 @@ export default function ProfilePage() {
               item.id === id ? updatedItem : item
             ));
             setExpandedWishlist(null);
+            setWishlistUpdateCounter(prev => prev + 1);
           }
         } catch (error) {
           console.error('Error updating wishlist item:', error);
@@ -609,7 +617,7 @@ export default function ProfilePage() {
         };
         
         return processTabsInChunks(categories, userSkills, wishlist);
-      }, [categories, userSkills, wishlist]);
+  }, [categories, userSkills, wishlist, skillsUpdateCounter, wishlistUpdateCounter]);
       
     
       if(status === 'loading' || isLoading){
@@ -761,7 +769,7 @@ export default function ProfilePage() {
           </div>
     
           <div className="h-[70rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full items-start justify-start my-10" id="skills-section">
-            <Tabs tabs={optimizedTabs} />
+            <Tabs key={`tabs-${skillsUpdateCounter}-${wishlistUpdateCounter}`} tabs={optimizedTabs} />
           </div>
 
           {showAddSkillForm.set && (
@@ -960,7 +968,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-{showWishlistForm.set && (
+          {showWishlistForm.set && (
             <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}

@@ -4,14 +4,22 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card } from '@/components/ui/card';
 import { signOut } from "next-auth/react";
-import { LucideUser, LucideMail } from 'lucide-react';
-import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import { Search } from 'lucide-react';
+import { motion } from "framer-motion";
 import RadialGraph from "@/components/ui/radialGraph";
-
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
+import { Tabs } from "@/components/ui/tabs";
+import { GlowingStarsBackgroundCard, GlowingStarsTitle } from "@/components/ui/glowing-stars";
+import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
+import {
+  DropdownItem,
+  DropdownTrigger,
+  Dropdown,
+  DropdownMenu,
+  Avatar,
+} from "@heroui/react";
 
 interface Skill {
     id: string;
@@ -25,6 +33,7 @@ interface SearchedUserSKill {
     categoryId: string;
     skill: Skill;
     validatedByManager: boolean;
+    level?: string;
 }
 
 interface SearchUser {
@@ -32,357 +41,345 @@ interface SearchUser {
   name: string;
 }
 
-
 export default function ProfilePage() {
-
   const categories = [
     {id: '1', name: 'Professional & Technical'},
     {id: '2', name: 'Creative'},
     { id: '3', name: 'Life & Physical' },
     { id: '4', name: 'Social & Interpersonal' },
-    ]  
+  ];
  
-    const {data: session, status} = useSession();
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const [searchedUserId, setSearchedUserId] = useState<string | null>();
-    const [searchedUsername, setSearchedUsername] = useState<string | null>();
-    const [searchedUserSkills, setSearchedUserSkills] = useState<SearchedUserSKill[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [query, setQuery] = useState('');
-    const [searchUsers, setSearchUsers] = useState<SearchUser[]>([])
-    const [searchedUserInfo, setSearchedUserInfo] = useState({ email: '', image: null });
-    const [selectedCategory, setSelectedCategory] = useState(categories[0].id);
+  const {data: session, status} = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchedUserId, setSearchedUserId] = useState<string | null>();
+  const [searchedUsername, setSearchedUsername] = useState<string | null>();
+  const [searchedUserSkills, setSearchedUserSkills] = useState<SearchedUserSKill[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
+  const [searchedUserInfo, setSearchedUserInfo] = useState({ email: '', image: null });
+  const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
 
-
-    useEffect(() => {
-        setSearchedUserId('')
-        setSearchedUserId(searchParams.get('userid'))
-        setSearchedUsername(searchParams.get('username'))
+  useEffect(() => {
+    // Delay loading of heavy background effects
+    const timer = setTimeout(() => {
+      setShowBackgroundEffects(true);
+    }, 100);
     
-    },[searchParams])
+    return () => clearTimeout(timer);
+  }, []);
 
-    
+  useEffect(() => {
+    setSearchedUserId('');
+    setSearchedUsername(searchParams.get('username'));
+    // Set the ID after clearing it to ensure the effect triggers properly
+    setTimeout(() => {
+      setSearchedUserId(searchParams.get('userid'));
+    }, 0);
+  }, [searchParams]);
 
-    const fulltext = "<Skill Share/>";
-    
-    useEffect(() => {
-        if (status=='unauthenticated'){
-            router.push('/login');
-        }else if(status == 'authenticated'){
-        }
-    }, [status,router])
+  const fulltext = "<Skill Share/>";
+  
+  useEffect(() => {
+    if (status == 'unauthenticated') {
+      router.push('/login');
+    } else if (status == 'authenticated') {
+    }
+  }, [status, router]);
 
-    useEffect(() => {
-        // Reset searchedUserSkills when searchedUserId changes
-        setSearchedUserSkills([]);
-    
-        if (searchedUserId) {
-          fetchUserData();
-        }
-      }, [searchedUserId]); 
-
-
-      const fetchUserData = useCallback(async () => {
-        try {
-          const skillRes = await fetch('/api/search-profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ searchedUserId }),
-          });
-      
-          if (skillRes.ok) {
-            const { email, image, skills } = await skillRes.json();
-      
-            setSearchedUserSkills(skills);
-            setSearchedUserInfo({ email, image }); // Assuming you have state for this
-          }
-        } catch (error) {
-          console.error('Error while fetching user data:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      }, [searchedUserId]);
-      
-
-      const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        
-        const inputValue = e.target.value;
-        setQuery(inputValue);
-        if(inputValue!== ''){
-        try{
-          const res = await fetch('/api/search',{
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: inputValue }),
-          })
-    
-          if(res.ok){
-              const users = await res.json()
-              setSearchUsers(users);
-          }
+  const fetchUserData = useCallback(async () => {
+    try {
+      const skillRes = await fetch('/api/search-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchedUserId }),
+      });
+  
+      if (skillRes.ok) {
+        const { email, image, skills } = await skillRes.json();
+  
+        setSearchedUserSkills(skills);
+        setSearchedUserInfo({ email, image });
       }
-      catch(error){
-          console.error('Error while fetching user data:', error);
+    } catch (error) {
+      console.error('Error while fetching user data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchedUserId]);
+
+  useEffect(() => {
+    // Reset searchedUserSkills when searchedUserId changes
+    setSearchedUserSkills([]);
+    setIsLoading(true); // Set loading state when changing users
+
+    if (searchedUserId) {
+      fetchUserData();
+    }
+  }, [searchedUserId, fetchUserData]);
+  
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    setQuery(inputValue);
+    if (inputValue !== '') {
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: inputValue }),
+        });
+
+        if (res.ok) {
+          const users = await res.json();
+          setSearchUsers(users);
+        }
+      } catch (error) {
+        console.error('Error while fetching user data:', error);
       }
     }
-      };
+  };
 
-    const categorySkills = searchedUserSkills.filter(
-      (us) => us.categoryId === selectedCategory
-    );
-
-    
-
-    if(status === 'loading' || isLoading){
-        return(
-          <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444]">
-          {/* Animated Background Overlay */}
-          <motion.div
-            className="absolute inset-0 opacity-20"
-            animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            style={{
-              backgroundImage: "radial-gradient(circle at center, #3b3b3b 0%, transparent 80%)",
-              backgroundSize: "200% 200%",
-            }}
-          />
-
-          {/* Glassmorphic Loading Container */}
-          <div className="relative p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
-            {/* Spinner Animation */}
-            <motion.div
-              className="w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            />
-
-            {/* Loading Text (Fixed easing function) */}
-            <motion.p
-              className="mt-4 text-lg font-semibold text-white/90 tracking-wide"
-              animate={{ opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }} // Fixed this!
-            >
-              Loading, please wait...
-            </motion.p>
+  // Create optimized tabs similar to profile.tsx
+  const optimizedTabs = categories.map(category => ({
+    title: category.name,
+    value: category.id,
+    content: (
+      <div className="w-full h-full p-4 bg-neutral-950 rounded-xl">
+        <div className="flex justify-between items-center relative z-10">
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Category Expertise</span>
+            <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">Skills</h1>
           </div>
         </div>
-        );
-      }
-
-      
-
-      return(
-        <div className="min-h-screen bg-gradient-to-b from-[#222222] via-[#333333] to-[#444444] p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-        <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="mr-4 text-white"
-          >
-            {isSidebarOpen ? (
-              <X className="text-white hover:bg-gray-200 rounded-full" size={24} />
-            ) : (
-              <Menu className="text-white" size={24} />
-            )}
-          </Button>
-
-          <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
-              {fulltext}
-            </h1>
-          </div>
-
-        {/* Search Bar */}
-        <div className="text-sm mr-2 sm:flex flex-grow text-md items-center justify-center relative">
-            <input
-              type="text"
-              placeholder="Search..."
-              value={query}
-              onChange={handleInputChange}
-              className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
-            />
-            
-            {searchUsers.length > 0 && query && (
-              <div className="absolute top-10 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
-                {searchUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="p-2 hover:bg-gray-400 cursor-pointer text-white"
-                    onClick={() => {
-                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
-                      setQuery(""); // Clear the search input
-                      setSearchUsers([]); // Clear the search results
-                    }}
+        
+        <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
+        
+        <div className="w-full flex flex-col mb-8">
+          <div className="flex-1 overflow-hidden">
+          {(() => {
+              const filteredSkills = searchedUserSkills.filter(skill => skill.categoryId === category.id);
+              if (filteredSkills.length > 0) {
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="carousel-container h-full py-3"
                   >
-                    {user.name}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        <Button
-          onClick={() => {
-            router.push('/profile')
-          }}
-          className="bg-[#636363] hover:bg-[#222222] text-sm ml-2 sm:text-md px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-md mr-2"
-        >
-          Return to Profile
-        </Button>
-        <Button
-          onClick={() => {
-            signOut({ callbackUrl: "/" });
-          }}
-          className="hidden md:block mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
-        >
-          Sign Out
-        </Button>
-
-      </nav>
-
-        {/* Sidebar */}
-        <AnimatePresence>
-            {isSidebarOpen && (
-                <motion.div
-                    initial={{ x: -320 }}
-                    animate={{ x: 0 }}
-                    exit={{ x: -320 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="fixed top-16 left-0 w-80 bg-[#3b3b3b] shadow-lg flex flex-col h-[calc(100vh-4rem)] z-10"
-                >
-                    <div className="p-6 flex-1">
-                      <div className="mb-5">
-                        <div className="flex items-center space-x-2">
-                          <LucideUser className="text-gray-400 h-5 w-5" />
-                          <h1 className="text-2xl font-bold text-white">{session?.user?.name || 'User'}</h1>
-                        </div>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <LucideMail className="text-gray-400 h-5 w-5" />
-                          <p className="text-sm text-white">{session?.user?.email}</p>
-                        </div>
-                      </div>
-                    </div>
-  
-                    <div className="p-6 border-t">
-                        <Button
-                            onClick={() => signOut({ callbackUrl: "/" })}
-                            className="w-full bg-[#636363] hover:bg-[#222222]"
-                        >
-                            Sign Out
-                        </Button>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-
-        <div className="mt-14 sm:flex flex-col md:flex-row gap-6 mt-12">
-                  {/* Profile Card - Takes 2/3rd of the width */}
-                  <Card className="w-full bg-[#3b3b3b] rounded-2xl shadow-lg overflow-hidden border border-[#3b3b3b]">
-                    {/* Cover Photo */}
-                    <div className="relative h-32 bg-gray-300">
-                      <img
-                        src="https://plus.unsplash.com/premium_photo-1661872817492-fd0c30404d74?q=80&w=1487&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                        alt="Background"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-        
-                    {/* Profile Picture - Moved to the left and overlapping background */}
-                    <div className="relative">
-                      <div className="absolute -top-10 left-6">
-                        <Image
-                          src={searchedUserInfo.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-                          alt="Profile"
-                          width={140}
-                          height={140}
-                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 rounded-full shadow-md"
+                    <Carousel
+                      items={filteredSkills.map((skill, idx) => (
+                        <Card 
+                          key={skill.id}
+                          card={{
+                            title: skill.skill.name,
+                            category: skill.level || "Level 1",
+                            src: "", 
+                            content: (
+                              <motion.div
+                                whileHover={{ scale: 1.03, y: -5 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                              >
+                                <GlowingStarsBackgroundCard
+                                  className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-blue-500/20"
+                                >
+                                  <div className="flex justify-start">
+                                    <GlowingStarsTitle>{skill.skill.name}</GlowingStarsTitle>
+                                  </div>
+                                  <div className="flex justify-between items-end">
+                                    <div className="flex flex-col">
+                                      <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                        {skill.level || "Level 1"}
+                                      </span>
+                                      {skill.validatedByManager && (
+                                        <span className="text-xs text-emerald-400 mt-1 flex items-center">
+                                          <span className="w-2 h-2 bg-emerald-400 rounded-full mr-1"></span>
+                                          Validated
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>                          
+                                </GlowingStarsBackgroundCard>
+                              </motion.div>
+                            )
+                          }}
+                          index={idx}
+                          layout={false}
                         />
-                      </div>
+                      ))}
+                      initialScroll={0}
+                    />
+                  </motion.div>
+                );
+              } else {
+                return (
+                  <div className="h-32 flex items-center justify-center my-4">
+                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700/30 shadow-lg text-center">
+                      <p className="text-gray-400 text-lg mb-3">No skills added yet in this category</p>
                     </div>
-        
-                    {/* User Info */}
-                    <div className="text-center px-4 pb-4 mt-10">
-                      <h2 className="font-bold font-mono text-2xl text-white">{searchedUsername}</h2>
-                      <p className="text-sm text-white">{searchedUserInfo.email}</p>
-                      <p className="text-sm text-white mt-2">
-                        Passionate about building scalable web applications and mentoring
-                        developers.
-                      </p>
-        
-                      {/* Buttons */}
-                      <div className="mt-4 flex justify-center gap-2">
-                        <button className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                          Connect
-                        </button>
-                        <button className="border border-gray-300 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-400 transition">
-                          Message
-                        </button>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-        {/* Skills Grid */}
-        <div className="mt-6">
-          {/* Tabs */}
-          <div className="flex border-b border-gray-600">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex-1 text-center text-white py-2 font-medium transition-all text-sm sm:text-base ${
-                  selectedCategory === category.id
-                    ? "border-b-4 border-blue-500 text-blue-400"
-                    : "text-gray-400 hover:text-white"
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
+                  </div>
+                );
+              }
+            })()}
           </div>
+        </div>
+      </div>
+    ),
+  }));
 
-          {/* Skills List & Overview */}
-            <div className="mt-4 flex flex-col md:flex-row gap-6 px-2">
-              {/* Skills List */}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center justify-between space-x-2">
-                  <h3 className="font-bold font-mono text-2xl text-white">Skills</h3>
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-neutral-950">
+        {/* Animated Background Overlay */}
+        <motion.div
+          className="absolute inset-0 opacity-20"
+          animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          style={{
+            backgroundImage: "radial-gradient(circle at center,rgb(0, 0, 0) 0%, transparent 80%)",
+            backgroundSize: "200% 200%",
+          }}
+        />
 
-                </div>
-                <hr className="text-gray-600" />
-                {categorySkills.length > 0 ? (
-                  <div className="flex flex-wrap gap-3">
-                    {categorySkills.map((userSkill) => (
+        {/* Glassmorphic Loading Container */}
+        <div className="relative p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
+          {/* Spinner Animation */}
+          <motion.div
+            className="w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+
+          {/* Loading Text */}
+          <motion.p
+            className="mt-4 text-lg font-semibold text-white/90 tracking-wide"
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            Loading, please wait...
+          </motion.p>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div className="min-h-screen bg-neutral-950 p-4 md:p-8">
+      {/* navBar */}
+      <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+            {/* Left Section - Sidebar & Title */}
+            <div className="flex items-center gap-3">
+              {/* Title */}
+              <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+                {fulltext}
+              </h1>
+            </div>
+
+            <div className="hidden md:flex items-center space-x-4">
+              <Button 
+                onClick={() => document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                Skills
+              </Button>
+              <Button 
+                onClick={() => document.getElementById('recommendations-section')?.scrollIntoView({ behavior: 'smooth' })}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                Recommendations
+              </Button>
+              <Button
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                ORG Goals
+              </Button>
+            </div>
+    
+            {/* Right Section - Search Bar & Sign Out */}
+            <div className="flex items-center gap-4">
+              {/* Search Bar */}
+              <div className="relative w-64 sm:w-80">
+                {/* Lucide Search Icon */}
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                
+                {/* Input Field */}
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={query}
+                  onChange={handleInputChange}
+                  className="w-full p-2 pl-10  border-gray-300 border-2 rounded-full shadow-sm focus:outline-none text-white"
+                />
+                
+                {/* Dropdown for Search Results */}
+                {searchUsers.length > 0 && query && (
+                  <div className="absolute bg-[#000000] top-11 w-72 left-4 border-gray-300 border-2 rounded-md shadow-lg z-30">
+                    {searchUsers.map((user) => (
                       <div
-                        key={userSkill.id}
-                        className="flex items-center bg-[#2d2d2d] px-3 py-2 rounded-xl shadow-md transition-all hover:bg-[#1a1a1a]"
+                        key={user.id}
+                        className="p-2 hover:bg-gray-400 cursor-pointer text-white"
+                        onClick={() => {
+                          router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          setQuery(""); // Clear search input
+                          setSearchUsers([]); // Clear results
+                        }}
                       >
-                        <span className="text-white text-md whitespace-nowrap">{userSkill.skill.name}</span>
-                        <div className="flex items-center ml-2">
-                          {userSkill.validatedByManager && (
-                            <span className="text-green-500 text-xs font-medium">✔</span>
-                          )}
-                        </div>
+                        {user.name}
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-gray-400 text-center">No skills added yet.</p>
                 )}
               </div>
-  
-              {/* Skill Overview Card */}
-              <Card className="w-full md:w-1/2 p-4 bg-[#3b3b3b] rounded-2xl shadow-lg border border-[#3b3b3b] flex flex-col items-center">
-                <h3 className="text-white text-lg font-bold font-mono mb-4">Skills Overview</h3>
-                <RadialGraph userSkills={searchedUserSkills} />
-              </Card>
+    
+              <Dropdown placement="bottom-end">
+                <DropdownTrigger>
+                  <Avatar
+                    isBordered
+                    as="button"
+                    className="transition-transform hover:scale-105"
+                    color="secondary"
+                    size="md"
+                    src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+                  />
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
+                  <DropdownItem key="profile" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/profile')
+                    }}>
+                    My Profile
+                  </DropdownItem>
+                  <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
+                  <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
+                    Log Out
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
             </div>
-          </div>
+          </nav> 
+  
+      {showBackgroundEffects && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden">
+          <BackgroundBeams />
+        </div>
+      )}
+  
+      <div className="grid grid-cols-1 md:grid-cols-2 ml-4 md:ml-12 mt-20 md:mt-2">
+        <AnimatedTestimonials
+          testimonials={[{
+            quote: "Passionate about building scalable web applications and mentoring developers.",
+            name: searchedUsername || "User",
+            designation: "Software Developer",
+            src: searchedUserInfo.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+          }]}
+        />
+        <div className="ml-12">
+          <RadialGraph userSkills={searchedUserSkills} />
+        </div>
+      </div>
+  
+      <div className="h-[70rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full items-start justify-start my-10" id="skills-section">
+        <Tabs tabs={optimizedTabs} />
       </div>
     </div>
-  ) 
-}
+  )};
