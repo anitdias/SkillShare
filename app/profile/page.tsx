@@ -443,6 +443,13 @@ export default function ProfilePage() {
                                       <motion.div
                                         whileHover={{ scale: 1.03, y: -5 }}
                                         transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                        onClick={() => {
+                                          setExpandedSkill(skill.id);
+                                          setEditingSkill({ 
+                                            level: skill.level || "Level 1", 
+                                            description: skill.description || "" 
+                                          });
+                                        }}
                                       >
                                         <GlowingStarsBackgroundCard
                                           className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-blue-500/20"
@@ -461,14 +468,7 @@ export default function ProfilePage() {
                                                 </span>
                                               )}
                                             </div>
-                                            <motion.div 
-                                              onClick={() => {
-                                                setExpandedSkill(skill.id);
-                                                setEditingSkill({ 
-                                                  level: skill.level || "Level 1", 
-                                                  description: skill.description || "" 
-                                                });
-                                              }} 
+                                            <motion.div                                            
                                               className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.15)] flex items-center justify-center backdrop-blur-sm hover:bg-[hsla(0,0%,100%,.25)] transition-all duration-300"
                                               whileHover={{ scale: 1.1 }}
                                               whileTap={{ scale: 0.95 }}
@@ -554,6 +554,10 @@ export default function ProfilePage() {
                                       <motion.div
                                         whileHover={{ scale: 1.03, y: -5 }}
                                         transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                        onClick={() => {
+                                          setExpandedWishlist(item.id);
+                                          setEditingWishlistDescription(item.description || "");
+                                        }} 
                                       >
                                         <GlowingStarsBackgroundCard
                                           className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-purple-500/20"
@@ -567,11 +571,7 @@ export default function ProfilePage() {
                                                 Future Skill
                                               </span>
                                             </div>
-                                            <motion.div 
-                                              onClick={() => {
-                                                setExpandedWishlist(item.id);
-                                                setEditingWishlistDescription(item.description || "");
-                                              }} 
+                                            <motion.div                                               
                                               className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.15)] flex items-center justify-center backdrop-blur-sm hover:bg-[hsla(0,0%,100%,.25)] transition-all duration-300"
                                               whileHover={{ scale: 1.1 }}
                                               whileTap={{ scale: 0.95 }}

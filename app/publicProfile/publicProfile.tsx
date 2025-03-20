@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { signOut } from "next-auth/react";
 import { Search } from 'lucide-react';
 import { motion } from "framer-motion";
@@ -273,26 +272,6 @@ export default function ProfilePage() {
               <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
                 {fulltext}
               </h1>
-            </div>
-
-            <div className="hidden md:flex items-center space-x-4">
-              <Button 
-                onClick={() => document.getElementById('skills-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
-              >
-                Skills
-              </Button>
-              <Button 
-                onClick={() => document.getElementById('recommendations-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
-              >
-                Recommendations
-              </Button>
-              <Button
-                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
-              >
-                ORG Goals
-              </Button>
             </div>
     
             {/* Right Section - Search Bar & Sign Out */}

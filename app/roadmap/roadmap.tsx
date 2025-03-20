@@ -6,10 +6,17 @@ import { useEffect, useState } from 'react';
 import { signOut } from "next-auth/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { LucideUser, LucideMail, Download, BrainCircuit } from 'lucide-react';
-import './RoadmapFlowchart.css'; // Custom styles for the flowchart
+import {  Search, Download, BrainCircuit} from "lucide-react";
+import { motion } from "framer-motion";
+import { Timeline } from "@/components/ui/timeline";
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import {
+  DropdownItem,
+  DropdownTrigger,
+  Dropdown,
+  DropdownMenu,
+  Avatar,
+} from "@heroui/react";
 
 interface SearchUser {
   id: string;
@@ -39,12 +46,21 @@ export default function RoadmapForm() {
   const [level, setLevel] = useState<string>("beginner");
   const [roadmap, setRoadmap] = useState<RoadmapType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<number | null>(null);
   const [query, setQuery] = useState('');
-  const [searchUsers, setSearchUsers] = useState<SearchUser[]>([])
+  const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
+  const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fulltext = "<Skill Share/>";
+
+  useEffect(() => {
+    // Delay loading of heavy background effects
+    const timer = setTimeout(() => {
+      setShowBackgroundEffects(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => setSkillName(searchParams.get('skillName')), [searchParams]);
 
@@ -63,6 +79,7 @@ export default function RoadmapForm() {
   }, [skillName, level]);
 
   const getRoadmap = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch("/api/get-roadmap", {
         method: "POST",
@@ -71,6 +88,7 @@ export default function RoadmapForm() {
       });
 
       if (!response.ok) {
+        setIsLoading(false);
         return;
       }
 
@@ -78,6 +96,8 @@ export default function RoadmapForm() {
       setRoadmap(data.roadmap || []);
     } catch (err) {
       console.error("Error getting roadmap:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -85,6 +105,7 @@ export default function RoadmapForm() {
     e.preventDefault();
     setError(null);
     setRoadmap(null);
+    setIsLoading(true);
 
     try {
       const response = await fetch("/api/generate-roadmap", {
@@ -96,6 +117,7 @@ export default function RoadmapForm() {
       if (!response.ok) {
         const errorData = await response.json();
         setError(errorData.error || "Something went wrong.");
+        setIsLoading(false);
         return;
       }
 
@@ -105,6 +127,8 @@ export default function RoadmapForm() {
     } catch (err) {
       console.error("Error fetching roadmap:", err);
       setError("Failed to fetch the roadmap. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,222 +159,242 @@ export default function RoadmapForm() {
   };
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        
     const inputValue = e.target.value;
     setQuery(inputValue);
     if(inputValue!== ''){
-    try{
-      const res = await fetch('/api/search',{
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: inputValue }),
-      })
+      try{
+        const res = await fetch('/api/search',{
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: inputValue }),
+        })
 
-      if(res.ok){
+        if(res.ok){
           const users = await res.json()
           setSearchUsers(users);
+        }
       }
-  }
-  catch(error){
-      console.error('Error while fetching user data:', error);
-  }
-}
+      catch(error){
+        console.error('Error while fetching user data:', error);
+      }
+    }
   };
 
-  const handleNodeClick = (index: number) => {
-    setSelectedNode(selectedNode === index ? null : index);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] text-white">
-      <nav className="h-16 bg-[#3b3b3b] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4">
-        <div className="flex items-center">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="mr-4 text-white"
-          >
-            {isSidebarOpen ? (
-              <X className="text-white hover:bg-gray-200 rounded-full" size={24} />
-            ) : (
-              <Menu className="text-white" size={24} />
-            )}
-          </Button>
-
-          <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-[#636363] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
-              {fulltext}
-            </h1>
+  // Transform roadmap steps to timeline format
+  const timelineData = roadmap?.roadmap?.steps.map(step => ({
+    title: step.label,
+    content: (
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700/30 shadow-lg mb-6">
+        <p className="text-gray-300 mb-4">{step.description}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-800/50 p-4 rounded-lg">
+            <h4 className="text-blue-400 font-semibold mb-2">Timeline</h4>
+            <p className="text-gray-300">{step.timeline}</p>
           </div>
-
-        {/* Search Bar */}
-        <div className="flex-grow flex items-center justify-center">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={query}
-            onChange={handleInputChange}
-            className="w-full max-w-md p-2 bg-[#636363] border-gray-300 border-2 rounded-md shadow-sm focus:outline-none text-white"
-          />
-
-        {searchUsers.length > 0 && query && (
-              <div className="absolute top-12 w-full max-w-md bg-[#636363] border-gray-300 border-2 rounded-md shadow-lg z-30">
-                {searchUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="p-2 hover:bg-gray-400 cursor-pointer text-white"
-                    onClick={() => {
-                      router.push(`/publicProfile?userid=${user.id}&username=${user.name}`)
-                    }}
-                  >
-                    {user.name}
-                  </div>
-                ))}
-              </div>
-            )}
-            </div>
-
-        <Button
-          onClick={() => {
-            router.push('/profile')
-          }}
-          className="bg-[#636363] hover:bg-[#222222] text-sm ml-2 sm:text-md px-3 py-1 sm:px-4 sm:py-2 rounded-lg shadow-md mr-2"
-        >
-          Return to Profile
-        </Button>
-        <Button
-          onClick={() => {
-            signOut({ callbackUrl: "/" });
-          }}
-          className="hidden md:block mt-4 md:mt-0 bg-[#636363] hover:bg-[#222222]"
-        >
-          Sign Out
-        </Button>
-
-      </nav>
-
-      <AnimatePresence>
-                {isSidebarOpen && (
-                    <motion.div
-                        initial={{ x: -320 }}
-                        animate={{ x: 0 }}
-                        exit={{ x: -320 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed top-16 left-0 w-80 bg-[#3b3b3b] shadow-lg flex flex-col h-[calc(100vh-4rem)] z-10"
-                    >
-                        <div className="p-6 flex-1">
-                          <div className="mb-5">
-                            <div className="flex items-center space-x-2">
-                              <LucideUser className="text-gray-400 h-5 w-5" />
-                              <h1 className="text-2xl font-bold text-white">{session?.user?.name || 'User'}</h1>
-                            </div>
-                            <div className="flex items-center space-x-2 mt-2">
-                              <LucideMail className="text-gray-400 h-5 w-5" />
-                              <p className="text-sm text-white">{session?.user?.email}</p>
-                            </div>
-                          </div>
-                        </div>
-      
-                        <div className="p-6 border-t">
-                            <Button
-                                onClick={() => signOut({ callbackUrl: "/" })}
-                                className="w-full bg-[#636363] hover:bg-[#222222]"
-                            >
-                                Sign Out
-                            </Button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-      <div className='mt-12 relative p-6 w-full max-w-4xl flex flex-col overflow-auto'>
-      <div className="flex justify-center">
-        <h1 className="text-2xl font-bold font-mono text-white mb-4 text-center">
-          Generate a Skill Roadmap
-        </h1>
-      </div>
-      <hr className="text-gray-600 mb-3"/>
-        <form onSubmit={generateRoadmap} className="space-y-4">
-          <Input
-            type="text"
-            placeholder="Enter a skill"
-            value={skillName || ""}
-            onChange={(e) => setSkillName(e.target.value)}
-            className="w-full border-2 border-gray-600 bg-[#1E1E1E] text-white p-2 rounded-md"
-          />
-          <select
-            value={level}
-            onChange={(e) => setLevel(e.target.value)}
-            className="rounded-lg bg-[#1E1E1E] border p-2 w-full text-white border-gray-600 border-2"
-          >
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-          <div className="flex justify-between w-full flex-wrap gap-2">
-            <button 
-                type="submit" 
-                className="bg-[#636363] hover:bg-[#222222] text-white p-2 sm:p-3 rounded flex items-center min-w-0 text-sm sm:text-base"
-            >
-                <BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Generate Roadmap
-            </button>
-
-            <button
-                type="button"
-                onClick={saveRoadmap}
-                className="bg-[#636363] hover:bg-[#222222] text-white p-2 sm:p-3 rounded flex items-center min-w-0 text-sm sm:text-base"
-            >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                Save Roadmap
-            </button>
-            </div>
-  
-        </form>
-        <hr className="text-gray-600 mt-3"/>
-        <div className="mt-4 text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] p-4 rounded-xl">
-          {error && <p className="text-red-500">{error}</p>}
-          {roadmap && roadmap.roadmap?.steps && (
-            <div className="flowchart">
-              {roadmap.roadmap.steps.map((step, index) => (
-                <div
-                  key={index}
-                  className={`flowchart-node ${selectedNode === index ? 'expanded' : ''}`}
-                  onClick={() => handleNodeClick(index)}
-                >
-                  <div className="node-label">{step.label}</div>
-                  {selectedNode === index && (
-                    <div className="node-details">
-                      <p>{step.description}</p>
-                      <ul>
-                        <li><strong><u>Timeline:</u></strong> {step.timeline}</li>
-                        <li>
-                          <strong><u>Resources:</u></strong>
-                          <ul>
-                            {step.resources.map((resource, idx) => (
-                              <li key={idx}>{resource}</li>
-                            ))}
-                          </ul>
-                        </li>
-                        <li>
-                          <strong><u>Challenges:</u></strong>
-                          <ul>
-                            {step.challenges.map((challenge, idx) => (
-                              <li key={idx}>{challenge}</li>
-                            ))}
-                          </ul>
-                        </li>
-                        <li><strong>Outcome:</strong> {step.outcome}</li>
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="bg-gray-800/50 p-4 rounded-lg">
+            <h4 className="text-emerald-400 font-semibold mb-2">Outcome</h4>
+            <p className="text-gray-300">{step.outcome}</p>
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <h4 className="text-purple-400 font-semibold mb-2">Resources</h4>
+          <ul className="list-disc pl-5 text-gray-300 space-y-1">
+            {step.resources.map((resource, idx) => (
+              <li key={idx}>{resource}</li>
+            ))}
+          </ul>
+        </div>
+        
+        <div className="mt-4">
+          <h4 className="text-amber-400 font-semibold mb-2">Challenges</h4>
+          <ul className="list-disc pl-5 text-gray-300 space-y-1">
+            {step.challenges.map((challenge, idx) => (
+              <li key={idx}>{challenge}</li>
+            ))}
+          </ul>
         </div>
       </div>
-    </div>
+    )
+  })) || [];
 
+  return (
+    <div className="min-h-screen bg-neutral-950 text-white">
+      {showBackgroundEffects && (
+        <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
+          <BackgroundBeams />
+        </div>
+      )}
+
+      {/* NavBar */}
+      <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+            {/* Left Section - Sidebar & Title */}
+            <div className="flex items-center gap-3">
+              {/* Title */}
+              <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+                {fulltext}
+              </h1>
+            </div>
+    
+            {/* Right Section - Search Bar & Sign Out */}
+            <div className="flex items-center gap-4">
+              {/* Search Bar */}
+              <div className="relative w-64 sm:w-80">
+                {/* Lucide Search Icon */}
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                
+                {/* Input Field */}
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={query}
+                  onChange={handleInputChange}
+                  className="w-full p-2 pl-10  border-gray-300 border-2 rounded-full shadow-sm focus:outline-none text-white"
+                />
+                
+                {/* Dropdown for Search Results */}
+                {searchUsers.length > 0 && query && (
+                  <div className="absolute bg-[#000000] top-11 w-72 left-4 border-gray-300 border-2 rounded-md shadow-lg z-30">
+                    {searchUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="p-2 hover:bg-gray-400 cursor-pointer text-white"
+                        onClick={() => {
+                          router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          setQuery(""); // Clear search input
+                          setSearchUsers([]); // Clear results
+                        }}
+                      >
+                        {user.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+    
+              <Dropdown placement="bottom-end">
+                <DropdownTrigger>
+                  <Avatar
+                    isBordered
+                    as="button"
+                    className="transition-transform hover:scale-105"
+                    color="secondary"
+                    size="md"
+                    src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+                  />
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
+                  <DropdownItem key="profile" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/profile')
+                    }}>
+                    My Profile
+                  </DropdownItem>
+                  <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
+                  <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
+                    Log Out
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+            </div>
+          </nav>
+
+      {/* Main Content */}
+      <div className="pt-20 px-4 md:px-8 max-w-7xl mx-auto relative z-10">
+        <div className="bg-gradient-to-br from-gray-900/40 to-black/40 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-8 border border-gray-800/30">
+          <h1 className="text-2xl md:text-4xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mb-4">Generate a Skill Roadmap</h1>
+          <p className="text-gray-300 mb-6">Create a personalized learning path for any skill at your desired level</p>
+          
+          <form onSubmit={generateRoadmap} className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <label htmlFor="skillName" className="block text-sm font-medium text-gray-300 mb-1">
+                  Skill Name
+                </label>
+                <Input
+                  id="skillName"
+                  value={skillName || ""}
+                  onChange={(e) => setSkillName(e.target.value)}
+                  placeholder="Enter a skill name"
+                  className="w-full bg-gray-800/40 backdrop-blur-sm border-gray-700/50 text-white"
+                  required
+                />
+              </div>
+              
+              <div className="w-full md:w-1/3">
+                <label htmlFor="level" className="block text-sm font-medium text-gray-300 mb-1">
+                  Skill Level
+                </label>
+                <select
+                  id="level"
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                  className="w-full p-2 rounded-md bg-gray-700/40 backdrop-blur-sm border border-gray-700/50 text-white focus:outline-none"
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-4 pt-2">
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                disabled={isLoading}
+              >
+                <BrainCircuit size={18} />
+                {isLoading ? "Generating..." : "Generate Roadmap"}
+              </Button>
+            </div>
+          </form>
+        </div>
+        
+        {error && (
+          <div className="bg-red-900/30 border border-red-500 text-red-300 p-4 rounded-lg mb-6">
+            <p>{error}</p>
+          </div>
+        )}
+        
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="relative p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
+              <motion.div
+                className="w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.p
+                className="mt-4 text-lg font-semibold text-white/90 tracking-wide"
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              >
+                Creating your roadmap...
+              </motion.p>
+            </div>
+          </div>
+        )}
+        
+        {roadmap && roadmap.roadmap && roadmap.roadmap.steps && roadmap.roadmap.steps.length > 0 && (
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono">Your Learning Roadmap</h2>
+              <Button
+                onClick={saveRoadmap}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
+              >
+                <Download size={18} />
+                Save Roadmap
+              </Button>
+            </div>
+            
+            <div className="bg-neutral-900 rounded-xl p-6 shadow-lg">
+              <Timeline data={timelineData} />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
