@@ -4,8 +4,6 @@ import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prisma";
 import bcrypt from "bcryptjs";
-import type { JWT } from "next-auth/jwt";
-import type { Session, User } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -56,22 +54,45 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: User }) {
+    async jwt({ token, user, trigger, session }) {
+      // Initial sign in
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.image = user.image;
+        
+        // Fetch additional user data from database
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { designation: true, description: true }
+        });
+        
+        if (dbUser) {
+          token.designation = dbUser.designation;
+          token.description = dbUser.description;
+        }
       }
+      
+      // Handle updates from session callback
+      if (trigger === "update" && session) {
+        token.name = session.user.name;
+        token.designation = session.user.designation;
+        token.description = session.user.description;
+      }
+      
       return token;
     },
-
-    async session({ session, token }: { session: Session; token: JWT }) {
-        if (session.user) {
-          session.user.id = token.id as string; 
-          session.user.name = token.name as string | null | undefined;
-          session.user.image = token.image as string | null | undefined;
-        }
-        return session;
+    
+    // In the session callback
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.name = token.name as string | null | undefined;
+        session.user.image = token.image as string | null | undefined;
+        session.user.designation = token.designation as string | null | undefined;
+        session.user.description = token.description as string | null | undefined;
       }
+      return session;
+    }
   }
 };

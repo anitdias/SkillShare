@@ -25,6 +25,8 @@ model User{
   passwordHash    String?
   email           String  @unique
   image           String?
+  designation     String?
+  description     String?
   role            UserRole @default(user)
   createdAt       DateTime @default(now())
   emailVerified   DateTime?

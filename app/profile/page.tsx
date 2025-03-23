@@ -87,6 +87,8 @@ export default function ProfilePage() {
   const [editingWishlistDescription, setEditingWishlistDescription] = useState('');
   const [skillsUpdateCounter, setSkillsUpdateCounter] = useState(0);
   const [wishlistUpdateCounter, setWishlistUpdateCounter] = useState(0);
+  const [sessionKey, setSessionKey] = useState(0);
+  
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -104,18 +106,19 @@ export default function ProfilePage() {
       router.push('/login');
     } else if (status === 'authenticated') {
       fetchUserData();
+      setSessionKey(prev => prev + 1); // Increment the key when session changes
     }
-  }, [status, router]);
+  }, [status, router, session?.user?.name, session?.user?.description, session?.user?.designation]);
 
-    const testimonials = useMemo(() => [
-      {
-        quote:
-          "Passionate about building scalable web applications and mentoring developers.",
-        name: session?.user?.name,
-        designation: "Intern at Framsikt",
-        src: session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      }
-    ], [session]);
+  const testimonials = useMemo(() => [
+    {
+      quote:
+        session?.user?.description || "                                                                                                                                ",
+      name: session?.user?.name,
+      designation: session?.user?.designation || "                                                                                                               ",
+      src: session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    }
+  ], [session?.user?.name, session?.user?.description, session?.user?.designation, session?.user?.image, sessionKey]);
 
     const Icon = () => {
       return (
@@ -742,7 +745,9 @@ export default function ProfilePage() {
                     <p className="font-semibold text-sm text-white">{session?.user?.email}</p>
                   </DropdownItem>
                   <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
-                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/edit-profile')
+                  }}>Edit Profile</DropdownItem>
                   <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
                     Log Out
                   </DropdownItem>
@@ -758,6 +763,7 @@ export default function ProfilePage() {
           )}
           <div className="grid grid-cols-1 md:grid-cols-2 ml-4 md:ml-12 mt-20 md:mt-2">
           <AnimatedTestimonials
+            key={`testimonials-${sessionKey}`}
             testimonials={testimonials.map((t) => ({
               ...t,
               name: t.name ?? "Anonymous", // Provide a default value
