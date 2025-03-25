@@ -36,6 +36,7 @@ model User{
   sessions        Session[]
   skillWishlist   SkillWishlist[]
   roadmap         Roadmap[]
+  userCompetencies UserCompetency[]
 }
 
 model SkillCategory {
@@ -129,3 +130,29 @@ model Roadmap {
   @@unique([userId, skillName, level])
 }
 
+model Competency {
+  id              String  @id @default(uuid()) 
+  competencyType  String  
+  competencyName  String  
+  weightage       Int     
+  description     String?  
+  createdAt       DateTime @default(now())
+
+  userCompetencies UserCompetency[]
+  
+  @@unique([competencyType, competencyName]) // Ensuring unique competency types
+}
+
+model UserCompetency {
+  id              String  @id @default(uuid())
+  userId          String  
+  competencyId    String  
+  employeeRating  Int     @default(0) @db.SmallInt // 0-4 scale
+  managerRating   Int     @default(0) @db.SmallInt 
+  adminRating     Int     @default(0) @db.SmallInt
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  competency  Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, competencyId]) // Ensuring unique competency per user
+}
