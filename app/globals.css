@@ -86,3 +86,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+[data-loaded="true"] {
+  opacity: 1 !important;
+}

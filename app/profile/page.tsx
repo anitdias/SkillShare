@@ -22,7 +22,7 @@ import { GlowingStarsBackgroundCard, GlowingStarsTitle } from "@/components/ui/g
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
 import {InfiniteMovingCards} from "@/components/ui/infinite-moving-cards";
 import { globeConfig, sampleArcs } from "@/lib/globe_data";
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 const World = dynamic(() => import('@/components/ui/globe'), {
   ssr: false, // Disable server-side rendering
 });
@@ -88,6 +88,7 @@ export default function ProfilePage() {
   const [skillsUpdateCounter, setSkillsUpdateCounter] = useState(0);
   const [wishlistUpdateCounter, setWishlistUpdateCounter] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
+  const imageSrc = session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
   
 
   useEffect(() => {
@@ -730,14 +731,14 @@ export default function ProfilePage() {
     
               <Dropdown placement="bottom-end">
                 <DropdownTrigger>
-                  <Avatar
-                    isBordered
-                    as="button"
-                    className="transition-transform hover:scale-105"
-                    color="secondary"
-                    size="md"
-                    src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
-                  />
+                <Avatar
+                  as="button"
+                  className="transition-transform hover:scale-105"
+                  color="secondary"
+                  size="md"
+                  src={imageSrc}
+                  data-loaded="true"
+                />
                 </DropdownTrigger>
                 <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
                   <DropdownItem key="profile" className="h-16 gap-2 hover:bg-gray-600 transition rounded-md">
