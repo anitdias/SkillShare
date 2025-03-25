@@ -1,28 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import * as XLSX from "xlsx";
 import prisma from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-
-interface Competency {
-  type: string;
-  name: string;
-  weightage: number;
-  description: string;
-}
+import { chunk } from "lodash";
 
 export async function POST(req: NextRequest) {
   try {
-    // Check authentication and authorization
+    // Check authentication
     const session = await getServerSession(authOptions);
-    
     if (!session || !session.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
+    // Parse file from form data
     const formData = await req.formData();
     const file = formData.get("file") as Blob;
-
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
@@ -34,83 +27,90 @@ export async function POST(req: NextRequest) {
     // Read and parse the Excel file
     const workbook = XLSX.read(buffer, { type: "buffer" });
     const requiredSheets = [2, 3, 4];
-    const competencies: Competency[] = [];
+    const competencies: { type: string; name: string; weightage: number; description: string }[] = [];
 
     for (const index of requiredSheets) {
-      if (!workbook.SheetNames[index]) continue; // Skip if sheet doesn't exist
-
+      if (!workbook.SheetNames[index]) continue;
       const sheet = workbook.Sheets[workbook.SheetNames[index]];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
       jsonData.forEach((row) => {
-        const typedRow = row as Record<string, unknown>; // Explicitly type row
-
+        const typedRow = row as Record<string, unknown>;
         if (typeof typedRow["Competency type"] === "string" && typeof typedRow["Competency Name"] === "string") {
           competencies.push({
             type: typedRow["Competency type"],
             name: typedRow["Competency Name"],
-            weightage: Number(typedRow["Weightage"]) || 0, // Ensure number type
-            description: String(typedRow["Description"] || ""), // Ensure string type
+            weightage: Number(typedRow["Weightage"]) || 0,
+            description: String(typedRow["Description"] || ""),
           });
         }
       });
     }
 
-    // Get all users
-    const users = await prisma.user.findMany({
-      select: { id: true }
-    });
-    
+    // Fetch all users
+    const users = await prisma.user.findMany({ select: { id: true } });
+
+    // Clear existing data (run in a single transaction)
+    await prisma.$transaction([
+      prisma.userCompetency.deleteMany({}),
+      prisma.competency.deleteMany({})
+    ]);
+
     let competenciesAdded = 0;
     let userCompetenciesAdded = 0;
-    
-    // Use transaction to ensure data consistency
-    await prisma.$transaction(async (tx) => {
-      // First, truncate both tables
-      await tx.userCompetency.deleteMany({});
-      await tx.competency.deleteMany({});
-      
-      // Process each competency
-      for (const comp of competencies) {
-        // Create new competency (no need to check existence as table is empty)
-        const competency = await tx.competency.create({
-          data: {
-            competencyType: comp.type,
-            competencyName: comp.name,
-            weightage: comp.weightage,
-            description: comp.description
-          }
-        });
-        competenciesAdded++;
-        
-        // Create user competency mappings for all users
-        await Promise.all(users.map(async (user) => {
-          await tx.userCompetency.create({
-            data: {
-              userId: user.id,
-              competencyId: competency.id,
-              employeeRating: 0,
-              managerRating: 0,
-              adminRating: 0
-            }
-          });
-          userCompetenciesAdded++;
-        }));
-      }
+
+    // Process competencies
+    const newCompetencies = await prisma.competency.createMany({
+      data: competencies.map(comp => ({
+        competencyType: comp.type,
+        competencyName: comp.name,
+        weightage: comp.weightage,
+        description: comp.description
+      })),
+      skipDuplicates: true
     });
-      
-      return NextResponse.json({
-        success: true,
-        competenciesAdded,
-        userCompetenciesAdded,
-        message: 'Competencies processed successfully'
-      });
-      
-    } catch (error) {
-      console.error("Error processing competency upload:", error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "An unknown error occurred" },
-        { status: 500 }
-      );
+
+    competenciesAdded = newCompetencies.count;
+
+    // Fetch newly inserted competencies
+    const insertedCompetencies = await prisma.competency.findMany({
+      select: { id: true, competencyName: true }
+    });
+
+    // Create user-competency mappings in chunks
+    const batchSize = 50;
+    const userCompetencyData = [];
+
+    for (const comp of insertedCompetencies) {
+      for (const user of users) {
+        userCompetencyData.push({
+          userId: user.id,
+          competencyId: comp.id,
+          employeeRating: 0,
+          managerRating: 0,
+          adminRating: 0
+        });
+      }
     }
+
+    const userCompetencyChunks = chunk(userCompetencyData, batchSize);
+    for (const batch of userCompetencyChunks) {
+      await prisma.userCompetency.createMany({ data: batch });
+      userCompetenciesAdded += batch.length;
+    }
+
+    return NextResponse.json({
+      success: true,
+      competenciesAdded,
+      userCompetenciesAdded,
+      message: "Competencies processed successfully"
+    });
+
+  } catch (error) {
+    console.error("Error processing competency upload:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "An unknown error occurred" },
+      { status: 500 }
+    );
   }
+}
