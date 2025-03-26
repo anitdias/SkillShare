@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     // Read and parse the Excel file
     const workbook = XLSX.read(buffer, { type: "buffer" });
-    const requiredSheets = [2, 3, 4];
+    const requiredSheets = [1, 2, 3, 4];
     const competencies: { type: string; name: string; weightage: number; description: string }[] = [];
 
     for (const index of requiredSheets) {

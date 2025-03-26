@@ -701,13 +701,10 @@ export default function ProfilePage() {
                   <DropdownItem key="competencies" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/competency');
                   }}>
-                    Competencies
+                    Values & Competencies
                   </DropdownItem>
                   <DropdownItem key="goals" className="hover:bg-gray-600 transition p-3 rounded-md">
                     Goals
-                  </DropdownItem>
-                  <DropdownItem key="values" className="hover:bg-gray-600 transition p-3 rounded-md">
-                    Values
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>

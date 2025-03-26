@@ -228,7 +228,7 @@ export default function CompetencyPage() {
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center mt-8">
           <h1 className="text-4xl md:text-6xl font-bold font-mono text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500">
-            COMPETENCIES
+            VALUES & COMPETENCIES
           </h1>
           
           {/* Gradient Effects */}
