@@ -193,11 +193,11 @@ export default function UploadExcel() {
       
       <div className="relative z-10 pt-20 px-4 md:px-8 max-w-4xl mx-auto">
         <Button 
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/profile")}
           className="mb-6 bg-transparent hover:bg-gray-800 text-white flex items-center gap-2 rounded-md px-4 py-2 transition duration-300"
         >
           <ArrowLeft size={18} />
-          Back to Dashboard
+          Back to Profile
         </Button>
         
         <div className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-sm p-8 rounded-xl shadow-lg border border-gray-800/50">
