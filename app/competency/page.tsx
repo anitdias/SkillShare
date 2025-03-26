@@ -264,7 +264,7 @@ export default function CompetencyPage() {
               </h2>
             </div>
 
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent mb-2" />
+            
             <div 
                   className="absolute inset-0 opacity-[0.5]"
                   style={{
