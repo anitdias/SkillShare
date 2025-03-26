@@ -686,11 +686,31 @@ export default function ProfilePage() {
               >
                 Recommendations
               </Button>
-              <Button
-                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
-              >
-                ORG Goals
-              </Button>
+              <Dropdown placement="bottom">
+                <DropdownTrigger>
+                  <Button 
+                    className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300 flex items-center gap-1"
+                  >
+                    ORG Goals
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1">
+                      <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="Organization Options" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-40">
+                  <DropdownItem key="competencies" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/competency');
+                  }}>
+                    Competencies
+                  </DropdownItem>
+                  <DropdownItem key="goals" className="hover:bg-gray-600 transition p-3 rounded-md">
+                    Goals
+                  </DropdownItem>
+                  <DropdownItem key="values" className="hover:bg-gray-600 transition p-3 rounded-md">
+                    Values
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
             </div>
     
             {/* Right Section - Search Bar & Sign Out */}
@@ -745,7 +765,9 @@ export default function ProfilePage() {
                     <p className="font-semibold text-sm text-gray-300">Signed in as</p>
                     <p className="font-semibold text-sm text-white">{session?.user?.email}</p>
                   </DropdownItem>
-                  <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
+                  <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/upload-excel')
+                  }}>Upload Excel</DropdownItem>
                   <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/edit-profile')
                   }}>Edit Profile</DropdownItem>
