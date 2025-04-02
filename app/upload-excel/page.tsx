@@ -31,6 +31,7 @@ export default function UploadExcel() {
   const [statusMessage, setStatusMessage] = useState("");
   const [query, setQuery] = useState('');
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   const fulltext = "<Skill Share/>";
 
@@ -61,25 +62,26 @@ export default function UploadExcel() {
 
   const handleUpload = async () => {
     if (!file) return;
-
+  
     setIsUploading(true);
     setUploadStatus("idle");
     setStatusMessage("");
-
+  
     try {
       const formData = new FormData();
       formData.append("file", file);
-
+      formData.append("year", selectedYear.toString());
+  
       const response = await fetch("/api/upload-excel", {
         method: "POST",
         body: formData,
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
         setUploadStatus("success");
-        setStatusMessage(`Successfully processed ${data.competenciesAdded} competencies and created ${data.userCompetenciesAdded} user competency mappings.`);
+        setStatusMessage(`Successfully processed ${data.competenciesAdded} competencies for year ${data.year} and created ${data.userCompetenciesAdded} user competency mappings.`);
       } else {
         throw new Error(data.error || "Failed to upload competencies");
       }
@@ -204,6 +206,22 @@ export default function UploadExcel() {
           <h1 className="text-3xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mb-6">
             Competency Upload
           </h1>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Select Year</label>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="w-full bg-gray-900/100 rounded-md p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            <p className="text-gray-400 text-sm mt-1">
+              Competencies will be stored for the selected year. Any existing competencies for this year will be replaced.
+            </p>
+          </div>
           
           <div className="space-y-6">
             <div className="bg-gray-800/30 p-6 rounded-lg border border-gray-700/50">

@@ -37,6 +37,7 @@ model User{
   skillWishlist   SkillWishlist[]
   roadmap         Roadmap[]
   userCompetencies UserCompetency[]
+  userGoals    UserGoal[]
 }
 
 model SkillCategory {
@@ -136,11 +137,12 @@ model Competency {
   competencyName  String  
   weightage       Int     
   description     String?  
+  year            Int     @default(2024)
   createdAt       DateTime @default(now())
 
   userCompetencies UserCompetency[]
   
-  @@unique([competencyType, competencyName]) // Ensuring unique competency types
+  @@unique([competencyType, competencyName, year]) // Ensuring unique competency types per year
 }
 
 model UserCompetency {
@@ -156,3 +158,33 @@ model UserCompetency {
 
   @@unique([userId, competencyId]) // Ensuring unique competency per user
 }
+
+model Goal {
+  id           String  @id @default(uuid())
+  goalCategory String
+  goalName     String
+  goalTitle    String
+  metric       String
+  weightage    Int
+  year         Int     @default(2024)
+  createdAt    DateTime @default(now())
+
+  userGoals    UserGoal[]
+
+  @@unique([goalCategory, goalName, year]) // Ensuring unique goal types per year
+}
+
+model UserGoal {
+  id           String  @id @default(uuid())
+  userId       String
+  goalId       String
+  employeeRating  Int  @default(0) @db.SmallInt // 0-4 scale
+  managerRating   Int  @default(0) @db.SmallInt
+  adminRating     Int  @default(0) @db.SmallInt
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal  Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, goalId]) // Ensuring unique goal per user
+}
+

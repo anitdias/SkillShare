@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { signOut } from "next-auth/react";
-import { Search } from 'lucide-react';
+import { Search, LucideX } from 'lucide-react';
 import { motion } from "framer-motion";
 import RadialGraph from "@/components/ui/radialGraph";
 import { BackgroundBeams } from "@/components/ui/background-beams";
@@ -33,6 +33,7 @@ interface SearchedUserSKill {
     skill: Skill;
     validatedByManager: boolean;
     level?: string;
+    description?: string;
 }
 
 interface SearchUser {
@@ -59,6 +60,7 @@ export default function ProfilePage() {
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
   const [searchedUserInfo, setSearchedUserInfo] = useState({ email: '', image: null });
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
+  const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -178,6 +180,7 @@ export default function ProfilePage() {
                               <motion.div
                                 whileHover={{ scale: 1.03, y: -5 }}
                                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                onClick={() => setExpandedSkill(skill.id)}
                               >
                                 <GlowingStarsBackgroundCard
                                   className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-blue-500/20"
@@ -340,6 +343,92 @@ export default function ProfilePage() {
       {showBackgroundEffects && (
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <BackgroundBeams />
+        </div>
+      )}
+
+      {expandedSkill && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-2xl w-full shadow-2xl overflow-hidden"
+          >
+            {/* Header with gradient background */}
+            <div className="relative bg-neutral-950 p-5">
+              <div 
+                className="absolute top-0 left-0 w-full h-full opacity-40"
+                style={{
+                  backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                  backgroundSize: "10px 10px"
+                }}
+              />
+              
+              <div className="flex justify-between items-center relative z-10">
+                <div>
+                  <div className="text-xs font-semibold text-blue-200 uppercase tracking-wider mb-1">Skill</div>
+                  <h2 className="text-2xl text-white font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-400">
+                    {searchedUserSkills.find(skill => skill.id === expandedSkill)?.skill.name}
+                  </h2>
+                </div>
+                <motion.button 
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setExpandedSkill(null)}
+                  className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all duration-200"
+                >
+                  <LucideX size={18} />
+                </motion.button>
+              </div>
+            </div>
+            
+            {/* Content area */}
+            <div className="p-6">
+              {/* Skill Level Badge */}
+              <div className="flex items-center gap-2 mb-6">
+                <motion.span 
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-sm text-purple-300 px-4 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 shadow-lg shadow-purple-500/5"
+                >
+                  {searchedUserSkills.find(skill => skill.id === expandedSkill)?.level || "Level 1"}
+                </motion.span>
+                
+                {searchedUserSkills.find(skill => skill.id === expandedSkill)?.validatedByManager && (
+                  <motion.span 
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-sm text-emerald-400 px-4 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-lg shadow-emerald-500/5 flex items-center"
+                  >
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
+                    Validated
+                  </motion.span>
+                )}
+              </div>
+
+              {/* Description */}
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="mb-6"
+              >
+                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                  <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4 min-h-[100px]">
+                    <p className="text-gray-200 whitespace-pre-wrap">
+                      {searchedUserSkills.find(skill => skill.id === expandedSkill)?.description || 
+                       "No description provided for this skill."}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
         </div>
       )}
   

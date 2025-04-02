@@ -703,7 +703,8 @@ export default function ProfilePage() {
                   }}>
                     Values & Competencies
                   </DropdownItem>
-                  <DropdownItem key="goals" className="hover:bg-gray-600 transition p-3 rounded-md">
+                  <DropdownItem key="goals" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/goals');}}>
                     Goals
                   </DropdownItem>
                 </DropdownMenu>

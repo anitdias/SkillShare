@@ -8,7 +8,7 @@ import { SparklesCore } from "@/components/ui/sparkles";
 import { motion } from "framer-motion";
 import { GlowingStarsBackgroundCard, GlowingStarsTitle } from "@/components/ui/glowing-stars2";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
-import { LucideX, Search} from "lucide-react";
+import { LucideX, Search, ChevronDown} from "lucide-react";
 import {
   DropdownItem,
   DropdownTrigger,
@@ -22,13 +22,14 @@ interface SearchUser {
     name: string;
   }
 
-interface Competency {
-  id: string;
-  competencyType: string;
-  competencyName: string;
-  weightage: number;
-  description: string;
-}
+  interface Competency {
+    id: string;
+    competencyType: string;
+    competencyName: string;
+    weightage: number;
+    description: string;
+    year: number; // Add year to the interface
+  }
 
 interface UserCompetency {
   id: string;
@@ -49,18 +50,19 @@ export default function CompetencyPage() {
   const [employeeRating, setEmployeeRating] = useState<number>(0);
   const [query, setQuery] = useState('');
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   const fulltext = "<Skill Share/>";
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
+    } else if (status === 'authenticated') {
+      fetchAvailableYears();
+      fetchCompetencies(new Date().getFullYear()); // Initial fetch with current year
     }
   }, [status, router]);
-
-  useEffect(() => {
-    fetchCompetencies();
-  }, []);
 
   useEffect(() => {
     if (expandedCompetency) {
@@ -71,9 +73,28 @@ export default function CompetencyPage() {
     }
   }, [expandedCompetency, userCompetencies]);
 
-  const fetchCompetencies = async () => {
+  const fetchAvailableYears = async () => {
     try {
-      const response = await fetch('/api/competency');
+      const response = await fetch('/api/competency-year');
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableYears(data);
+        // If no years available, use current year
+        if (data.length === 0) {
+          setAvailableYears([new Date().getFullYear()]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching available years:', error);
+      // Fallback to current year if error
+      setAvailableYears([new Date().getFullYear()]);
+    }
+  };
+
+  const fetchCompetencies = async (year: number) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/competency?year=${year}`);
       if (response.ok) {
         const data = await response.json();
         setUserCompetencies(data);
@@ -83,6 +104,12 @@ export default function CompetencyPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newYear = parseInt(e.target.value);
+    setSelectedYear(newYear);
+    fetchCompetencies(newYear); // Fetch competencies for the selected year
   };
 
   const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -241,6 +268,30 @@ export default function CompetencyPage() {
             <div className="absolute left-1/2 transform -translate-x-1/2 top-2 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-[5px] w-[300px] blur-sm" />
             <div className="absolute left-1/2 transform -translate-x-1/2 top-2 bg-gradient-to-r from-transparent via-sky-500 to-transparent h-px w-[300px]" />
           </div>
+        </div>       
+      </div>
+
+      <div className="max-w-7xl mx-auto mb-8">
+        <div className="flex items-start justify-start">
+          <div className="relative w-48">
+            <label className="block text-sm font-medium text-blue-400 uppercase tracking-wider mb-2">
+              Select Year
+            </label>
+            <div className="relative">
+            <select
+              value={selectedYear}
+              onChange={handleYearChange}
+              className="w-full bg-neutral-800/100 border border-gray-700 rounded-lg p-2.5 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none"
+            >
+              {availableYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -346,7 +397,7 @@ export default function CompetencyPage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-2xl w-full shadow-2xl overflow-hidden"
+            className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-2xl w-full shadow-2xl overflow-hidden max-h-[98vh]"
           >
             {/* Header with gradient background */}
             <div className="relative bg-neutral-950 p-5">
@@ -497,6 +548,58 @@ export default function CompetencyPage() {
                     ))}
                   </div>
                 </div>
+                
+                {/* Save Rating Button */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-6"
+                >
+                  <button
+                    onClick={async () => {
+                      if (!expandedCompetency) return;
+                      
+                      try {
+                        const response = await fetch('/api/competency', {
+                          method: 'PUT',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            userCompetencyId: expandedCompetency,
+                            rating: employeeRating,
+                          }),
+                        });
+                        
+                        if (response.ok) {
+                          // Update the local state to reflect the change
+                          setUserCompetencies(prevCompetencies => 
+                            prevCompetencies.map(comp => 
+                              comp.id === expandedCompetency 
+                                ? { ...comp, employeeRating } 
+                                : comp
+                            )
+                          );
+                          
+                          // Show success message or toast notifica
+                        } else {
+                          const error = await response.json();
+                          throw new Error(error.error || 'Failed to save rating');
+                        }
+                      } catch (error) {
+                        console.error('Error saving rating:', error);
+                        alert('Failed to save rating. Please try again.');
+                      }
+                    }}
+                    className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-lg shadow-purple-500/20 transition-all duration-300 flex items-center justify-center gap-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Save Rating
+                  </button>
+                </motion.div>
               </motion.div>
             </div>
           </motion.div>

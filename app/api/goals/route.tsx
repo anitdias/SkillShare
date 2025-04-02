@@ -16,23 +16,23 @@ export async function GET(req: NextRequest) {
     const yearParam = url.searchParams.get('year');
     const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
 
-    const userCompetencies = await prisma.userCompetency.findMany({
+    const userGoals = await prisma.userGoal.findMany({
       where: {
         userId: session.user.id,
-        competency: {
+        goal: {
           year: year
         }
       },
       include: {
-        competency: true
+        goal: true
       }
     });
 
-    return NextResponse.json(userCompetencies);
+    return NextResponse.json(userGoals);
   } catch (error) {
-    console.error("Error fetching competencies:", error);
+    console.error("Error fetching goals:", error);
     return NextResponse.json(
-      { error: "Failed to fetch competencies" },
+      { error: "Failed to fetch goals" },
       { status: 500 }
     );
   }
@@ -46,38 +46,38 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { userCompetencyId, rating } = await request.json();
+    const { userGoalId, rating } = await request.json();
 
-    if (!userCompetencyId || rating === undefined) {
+    if (!userGoalId || rating === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Verify the user owns this competency record
-    const userCompetency = await prisma.userCompetency.findUnique({
+    // Verify the user owns this goal record
+    const userGoal = await prisma.userGoal.findUnique({
       where: {
-        id: userCompetencyId,
+        id: userGoalId,
       },
     });
 
-    if (!userCompetency || userCompetency.userId !== session.user.id) {
-      return NextResponse.json({ error: "Unauthorized access to this competency" }, { status: 403 });
+    if (!userGoal || userGoal.userId !== session.user.id) {
+      return NextResponse.json({ error: "Unauthorized access to this goal" }, { status: 403 });
     }
 
     // Update the employee rating
-    const updatedCompetency = await prisma.userCompetency.update({
+    const updatedGoal = await prisma.userGoal.update({
       where: {
-        id: userCompetencyId,
+        id: userGoalId,
       },
       data: {
         employeeRating: rating,
       },
     });
 
-    return NextResponse.json(updatedCompetency);
+    return NextResponse.json(updatedGoal);
   } catch (error) {
-    console.error("Error updating competency rating:", error);
+    console.error("Error updating goal rating:", error);
     return NextResponse.json(
-      { error: "Failed to update competency rating" },
+      { error: "Failed to update goal rating" },
       { status: 500 }
     );
   }
