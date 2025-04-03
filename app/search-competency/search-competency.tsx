@@ -247,7 +247,6 @@ export default function SearchCompetencyPage() {
       if (response.ok) {
         // Refresh data after successful update
         fetchUserData();
-        setExpandedCompetency(null);
       } else {
         console.error('Failed to update rating');
       }
@@ -282,7 +281,6 @@ export default function SearchCompetencyPage() {
       if (response.ok) {
         // Refresh data after successful update
         fetchUserData();
-        setExpandedGoal(null);
       } else {
         console.error('Failed to update goal rating');
       }
