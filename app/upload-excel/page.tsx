@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,20 @@ export default function UploadExcel() {
   const [query, setQuery] = useState('');
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
-  const fulltext = "<Skill Share/>";
+  const fulltext = "<SkillShare/>";
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      if (session?.user?.role === "admin") {
+        setIsAuthorized(true);
+      } else {
+        // Not an admin, redirect to unauthorized page
+        router.push("/unauthorized");
+      }
+    }
+  }, [session, status, router]);
 
   // Redirect if not authenticated
   if (status === "unauthenticated") {
@@ -115,6 +127,17 @@ export default function UploadExcel() {
       }
     }
   };
+
+  if (status === "loading" || (status === "authenticated" && !isAuthorized)) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="w-12 h-12 border-4 border-t-blue-500 border-b-blue-700 border-l-blue-600 border-r-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl font-medium">Checking permissions...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 relative">

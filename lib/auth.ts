@@ -64,12 +64,13 @@ export const authOptions: NextAuthOptions = {
         // Fetch additional user data from database
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
-          select: { designation: true, description: true }
+          select: { designation: true, description: true, role: true }
         });
         
         if (dbUser) {
           token.designation = dbUser.designation;
           token.description = dbUser.description;
+          token.role = dbUser.role;
         }
       }
       
@@ -78,6 +79,7 @@ export const authOptions: NextAuthOptions = {
         token.name = session.user.name;
         token.designation = session.user.designation;
         token.description = session.user.description;
+        token.role = session.user.role;
       }
       
       return token;
@@ -91,6 +93,7 @@ export const authOptions: NextAuthOptions = {
         session.user.image = token.image as string | null | undefined;
         session.user.designation = token.designation as string | null | undefined;
         session.user.description = token.description as string | null | undefined;
+        session.user.role = token.role as "admin" | "manager" | "user" | undefined;
       }
       return session;
     }

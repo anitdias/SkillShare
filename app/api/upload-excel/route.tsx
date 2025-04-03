@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check if user has admin role
+    if (session.user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
     // Parse file from form data
     const formData = await req.formData();
     const file = formData.get("file") as Blob;

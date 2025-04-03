@@ -735,7 +735,12 @@ export default function ProfilePage() {
                         key={user.id}
                         className="p-2 hover:bg-gray-400 cursor-pointer text-white"
                         onClick={() => {
-                          router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          // Route differently based on user role
+                          if (session?.user?.role === "admin" || session?.user?.role === "manager") {
+                            router.push(`/search-competency?userid=${user.id}&username=${user.name}`);
+                          } else {
+                            router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          }
                           setQuery(""); // Clear search input
                           setSearchUsers([]); // Clear results
                         }}
@@ -763,9 +768,11 @@ export default function ProfilePage() {
                     <p className="font-semibold text-sm text-gray-300">Signed in as</p>
                     <p className="font-semibold text-sm text-white">{session?.user?.email}</p>
                   </DropdownItem>
-                  <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
-                    router.push('/upload-excel')
-                  }}>Upload Excel</DropdownItem>
+                  {session?.user?.role === "admin" ? (
+                    <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/upload-excel')
+                    }}>Upload Excel</DropdownItem>
+                  ) : null}
                   <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/edit-profile')
                   }}>Edit Profile</DropdownItem>
