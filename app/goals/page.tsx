@@ -538,6 +538,29 @@ export default function GoalsPage() {
                 </div>
               </motion.div>
 
+              <motion.div 
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mb-6"
+              >
+                <h3 className="text-sm font-medium text-green-200 mb-3">Current Ratings</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-blue-700/30">
+                    <p className="text-gray-400 text-sm mb-1">Employee Rating</p>
+                    <p className="text-3xl font-bold text-blue-400">{userGoals.find(ug => ug.id === expandedGoal)?.employeeRating}<span className="text-lg text-blue-500/70">/4</span></p>
+                  </div>
+                  <div className="bg-gradient-to-br from-green-900/20 to-green-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-green-700/30">
+                    <p className="text-gray-400 text-sm mb-1">Manager Rating</p>
+                    <p className="text-3xl font-bold text-green-400">{userGoals.find(ug => ug.id === expandedGoal)?.managerRating}<span className="text-lg text-green-500/70">/4</span></p>
+                  </div>
+                  <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-purple-700/30">
+                    <p className="text-gray-400 text-sm mb-1">Admin Rating</p>
+                    <p className="text-3xl font-bold text-purple-400">{userGoals.find(ug => ug.id === expandedGoal)?.adminRating}<span className="text-lg text-purple-500/70">/4</span></p>
+                  </div>
+                </div>
+              </motion.div>
+
               {/* Rating Selector */}
                 <motion.div 
                 initial={{ y: 30, opacity: 0 }}
