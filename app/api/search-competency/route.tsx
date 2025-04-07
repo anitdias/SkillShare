@@ -66,17 +66,9 @@ export async function POST(request: Request) {
     });
 
     // Fetch all goals for the specified year
-    const goals = await prisma.goal.findMany({
-      where: { year: Number(year) },
-    });
-
-    // Fetch user goals for the specified year
     const userGoals = await prisma.userGoal.findMany({
       where: { 
         userId: searchedUserId,
-        goal: {
-          year: Number(year)
-        }
       },
       include: {
         goal: true,
@@ -107,8 +99,34 @@ export async function POST(request: Request) {
     });
 
     // Group goals by category for better organization
-    const mappedGoals = goals.map(goal => {
-        const userGoal = userGoals.find(ug => ug.goalId === goal.id);
+    // Create a map of user's goals
+    const userGoalsMap = new Map(userGoals.map(ug => [ug.goalId, ug]));
+
+    // Fetch all goals for the year that the user doesn't have customized
+    const standardGoals = await prisma.goal.findMany({
+      where: { 
+        year: Number(year),
+        AND: {
+          id: {
+            notIn: userGoals.map(ug => ug.goal.id)
+          }
+        }
+      },
+    });
+
+    // Combine and map all goals
+    const mappedGoals = [
+      // First add user's specific goals
+      ...userGoals.map(userGoal => ({
+        ...userGoal.goal,
+        employeeRating: userGoal.employeeRating || 0,
+        managerRating: userGoal.managerRating || 0,
+        adminRating: userGoal.adminRating || 0,
+        userGoalId: userGoal.id
+      })),
+      // Then add standard goals that haven't been customized
+      ...standardGoals.map(goal => {
+        const userGoal = userGoalsMap.get(goal.id);
         return {
           ...goal,
           employeeRating: userGoal?.employeeRating || 0,
@@ -116,7 +134,8 @@ export async function POST(request: Request) {
           adminRating: userGoal?.adminRating || 0,
           userGoalId: userGoal?.id || null
         };
-      });
+      })
+    ];
   
       return NextResponse.json({
         user: {
