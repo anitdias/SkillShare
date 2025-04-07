@@ -289,6 +289,9 @@ export default function SearchCompetencyPage() {
       const goal = groupedGoals.find(g => g.id === expandedGoal);
       if (!goal) return;
       
+      // Store the current expanded goal ID
+      const currentExpandedGoal = expandedGoal;
+      
       const response = await fetch('/api/update-goal-rating', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -302,8 +305,9 @@ export default function SearchCompetencyPage() {
       });
       
       if (response.ok) {
-        // Refresh data after successful update
-        fetchUserData();
+        // Refresh data and restore expanded state
+        await fetchUserData();
+        setExpandedGoal(currentExpandedGoal);
       } else {
         console.error('Failed to update goal rating');
       }
