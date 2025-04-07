@@ -171,8 +171,6 @@ model Goal {
   createdAt    DateTime @default(now())
 
   userGoals    UserGoal[]
-
-  @@unique([goalCategory, goalName, year]) // Ensuring unique goal types per year
 }
 
 model UserGoal {

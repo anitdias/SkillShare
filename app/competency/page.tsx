@@ -169,7 +169,7 @@ export default function CompetencyPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 overflow-hidden px-4 py-12">
-    <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+    <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6">
             {/* Left Section - Sidebar & Title */}
             <div className="flex items-center gap-3">
               {/* Title */}
@@ -196,7 +196,7 @@ export default function CompetencyPage() {
                 
                 {/* Dropdown for Search Results */}
                 {searchUsers.length > 0 && query && (
-                  <div className="absolute bg-[#000000] top-11 w-72 left-4 border-gray-300 border-2 rounded-md shadow-lg z-30">
+                  <div className="absolute bg-[#000000] top-11 w-72 left-4 border-gray-300 border-2 rounded-md shadow-lg z-50">
                     {searchUsers.map((user) => (
                       <div
                         key={user.id}

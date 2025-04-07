@@ -87,6 +87,14 @@ export default function SearchCompetencyPage() {
   const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
   const [ratingValue, setRatingValue] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedGoal, setEditedGoal] = useState({
+    goalTitle: "",
+    goalName: "",
+    metric: "",
+    weightage: "",
+    goalCategory: ""
+  });
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -120,6 +128,21 @@ export default function SearchCompetencyPage() {
       }
     }
   }, [status, router, session?.user?.role]);
+
+  useEffect(() => {
+    if (expandedGoal) {
+      const goal = groupedGoals.find(g => g.id === expandedGoal);
+      if (goal) {
+        setEditedGoal({
+          goalTitle: goal.goalTitle,
+          goalName: goal.goalName,
+          metric: goal.metric,
+          weightage: goal.weightage.toString(),
+          goalCategory: goal.goalCategory
+        });
+      }
+    }
+  }, [expandedGoal, groupedGoals]);
 
   const Icon = () => {
     return (
@@ -286,6 +309,73 @@ export default function SearchCompetencyPage() {
       }
     } catch (error) {
       console.error('Error updating goal rating:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoalUpdate = async () => {
+    if (!expandedGoal) return;
+    
+    const goal = groupedGoals.find(g => g.id === expandedGoal);
+    if (!goal || !goal.userGoalId) {
+      console.error("Goal or userGoalId not found");
+      alert("Cannot update goal: missing required information");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      console.log("Sending update with data:", {
+        userGoalId: goal.userGoalId,
+        ...editedGoal,
+        weightage: parseInt(editedGoal.weightage),
+        userId: searchedUserId
+      });
+      
+      const response = await fetch('/api/search-competency', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userGoalId: goal.userGoalId,
+          ...editedGoal,
+          weightage: parseInt(editedGoal.weightage), // Convert to number
+          userId: searchedUserId
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Update successful:", result);
+        
+        // Update the local state to reflect the change
+        setGroupedGoals(prevGoals => 
+          prevGoals.map(g => 
+            g.id === expandedGoal 
+              ? { 
+                  ...g, 
+                  goalTitle: editedGoal.goalTitle,
+                  goalName: editedGoal.goalName,
+                  metric: editedGoal.metric,
+                  weightage: parseInt(editedGoal.weightage),
+                  goalCategory: editedGoal.goalCategory
+                } 
+              : g
+          )
+        );
+        
+        setIsEditing(false);
+        
+      } else {
+        const errorData = await response.json();
+        console.error("Server error:", errorData);
+        throw new Error(errorData.message || 'Failed to update goal');
+      }
+    } catch (error) {
+      console.error('Error updating goal:', error);
+      alert('Failed to update goal. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -710,66 +800,66 @@ export default function SearchCompetencyPage() {
                     
                     {/* Description */}
                     <motion.div 
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="mb-6"
-              >
-                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                  <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl overflow-hidden">
-                    {/* Description content with enhanced styling and increased height */}
-                    <div className="p-5 max-h-[280px] overflow-y-auto custom-scrollbar">
-                      {competency.description?.split('\n').map((line, i, arr) => {
-                        // Check if line looks like a heading (ends with a colon)
-                        const isHeading = line.trim().endsWith(':');
-                        // Check if line looks like a bullet point
-                        const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•');
-                        // Format numbers to be bold
-                        const formattedLine = line.replace(/(\d+)/g, '<span class="font-bold text-blue-200">$1</span>')
-                          // Replace number followed by arrow and colon pattern
-                          .replace(/(\d+)\s*(-&gt;|->|→)\s*:/g, '<span class="font-bold text-blue-200">$1</span> <span class="mx-1 text-purple-400">→</span> <span class="text-yellow-400 font-medium">:</span>')
-                          // Replace other arrows
-                          .replace(/(-&gt;|->|→)/g, '<span class="mx-1 text-purple-400">→</span>')
-                          // Replace colons in non-heading lines
-                          .replace(/(:\s)/g, '<span class="text-yellow-400 font-medium">: </span>');
-                        
-                        return (
-                          <div key={i} className={`${i < arr.length - 1 ? 'mb-2' : ''}`}>
-                            {isHeading ? (
-                              <h4 className="text-blue-300 font-medium mb-2 flex items-center">
-                                {line.replace(/:$/, '')}
-                                <span className="ml-1 text-yellow-400 text-lg">:</span>
-                              </h4>
-                            ) : isBullet ? (
-                              <div className="flex mb-1.5">
-                                <span className="text-purple-400 mr-2 text-lg">•</span>
-                                <p 
-                                  className="text-gray-200"
-                                  dangerouslySetInnerHTML={{ 
-                                    __html: formattedLine.replace(/^[-•]\s*/, '') 
-                                  }}
-                                />
-                              </div>
-                            ) : line ? (
-                              <p 
-                                className="text-gray-200 leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: formattedLine }}
-                              />
-                            ) : (
-                              <div className="h-3"></div>
-                            )}
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="mb-6"
+                    >
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                      <div className="relative group">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                        <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl overflow-hidden">
+                          {/* Description content with enhanced styling and increased height */}
+                          <div className="p-5 max-h-[280px] overflow-y-auto custom-scrollbar">
+                            {competency.description?.split('\n').map((line, i, arr) => {
+                              // Check if line looks like a heading (ends with a colon)
+                              const isHeading = line.trim().endsWith(':');
+                              // Check if line looks like a bullet point
+                              const isBullet = line.trim().startsWith('-') || line.trim().startsWith('•');
+                              // Format numbers to be bold
+                              const formattedLine = line.replace(/(\d+)/g, '<span class="font-bold text-blue-200">$1</span>')
+                                // Replace number followed by arrow and colon pattern
+                                .replace(/(\d+)\s*(-&gt;|->|→)\s*:/g, '<span class="font-bold text-blue-200">$1</span> <span class="mx-1 text-purple-400">→</span> <span class="text-yellow-400 font-medium">:</span>')
+                                // Replace other arrows
+                                .replace(/(-&gt;|->|→)/g, '<span class="mx-1 text-purple-400">→</span>')
+                                // Replace colons in non-heading lines
+                                .replace(/(:\s)/g, '<span class="text-yellow-400 font-medium">: </span>');
+                              
+                              return (
+                                <div key={i} className={`${i < arr.length - 1 ? 'mb-2' : ''}`}>
+                                  {isHeading ? (
+                                    <h4 className="text-blue-300 font-medium mb-2 flex items-center">
+                                      {line.replace(/:$/, '')}
+                                      <span className="ml-1 text-yellow-400 text-lg">:</span>
+                                    </h4>
+                                  ) : isBullet ? (
+                                    <div className="flex mb-1.5">
+                                      <span className="text-purple-400 mr-2 text-lg">•</span>
+                                      <p 
+                                        className="text-gray-200"
+                                        dangerouslySetInnerHTML={{ 
+                                          __html: formattedLine.replace(/^[-•]\s*/, '') 
+                                        }}
+                                      />
+                                    </div>
+                                  ) : line ? (
+                                    <p 
+                                      className="text-gray-200 leading-relaxed"
+                                      dangerouslySetInnerHTML={{ __html: formattedLine }}
+                                    />
+                                  ) : (
+                                    <div className="h-3"></div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Subtle gradient fade at bottom for scrollable content */}
-                    <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-neutral-800/90 to-transparent pointer-events-none"></div>
-                  </div>
-                </div>
-              </motion.div>
+                          
+                          {/* Subtle gradient fade at bottom for scrollable content */}
+                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-neutral-800/90 to-transparent pointer-events-none"></div>
+                        </div>
+                      </div>
+                    </motion.div>
                     
                     {/* Ratings */}
                     <motion.div 
@@ -789,7 +879,7 @@ export default function SearchCompetencyPage() {
                           <p className="text-3xl font-bold text-green-400">{competency.managerRating}<span className="text-lg text-green-500/70">/4</span></p>
                         </div>
                         <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-purple-700/30">
-                          <p className="text-gray-400 text-sm mb-1">Admin Rating</p>
+                          <p className="text-gray-400 text-sm mb-1">Supervisor Rating</p>
                           <p className="text-3xl font-bold text-purple-400">{competency.adminRating}<span className="text-lg text-purple-500/70">/4</span></p>
                         </div>
                       </div>
@@ -803,7 +893,7 @@ export default function SearchCompetencyPage() {
                       className="mb-4"
                     >
                       <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-medium text-gray-300">Your/Employee Rating</label>
+                        <label className="text-sm font-medium text-gray-300">Your Rating</label>
                         <span className="text-sm font-medium px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
                           Rating {ratingValue}
                         </span>
@@ -878,204 +968,309 @@ export default function SearchCompetencyPage() {
 
         {/* Expanded Goal Modal */}
         {expandedGoal && (() => {
-            const goal = groupedGoals.find(g => g.id === expandedGoal);
-            if (!goal) return null;
-            
-            return (
+          const goal = groupedGoals.find(g => g.id === expandedGoal);
+          if (!goal) return null;
+          
+          return (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-                <motion.div 
+              <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-2xl w-full shadow-2xl overflow-auto max-h-[85vh]"
-                >
+              >
                 {/* Header with gradient background */}
                 <div className="relative bg-neutral-950 p-4">
-                    <div 
+                  <div 
                     className="absolute top-0 left-0 w-full h-full opacity-40"
                     style={{
-                        backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
-                        backgroundSize: "10px 10px"
+                      backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                      backgroundSize: "10px 10px"
                     }}
-                    />
-                    
-                    <div className="flex justify-between items-center relative z-10">
+                  />
+                  
+                  <div className="flex justify-between items-center relative z-10">
                     <div>
-                        <div className="text-xs font-semibold text-green-200 uppercase tracking-wider mb-1">Goal</div>
+                      <div className="text-xs font-semibold text-green-200 uppercase tracking-wider mb-1">
+                        {isEditing ? "Edit Goal" : "Goal"}
+                      </div>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editedGoal.goalName}
+                          onChange={(e) => setEditedGoal({...editedGoal, goalName: e.target.value})}
+                          className="text-2xl text-white font-bold bg-transparent border-b border-green-400 focus:outline-none w-full"
+                          placeholder="Goal Name"
+                        />
+                      ) : (
                         <h2 className="text-2xl text-white font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-green-400">
-                        {goal.goalName}
+                          {goal.goalName}
                         </h2>
+                      )}
                     </div>
-                    <motion.button 
+                    <div className="flex items-center gap-2">
+                      {(session?.user?.role === "admin" || session?.user?.role === "manager") && !isEditing && (
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setIsEditing(true)}
+                          className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-full p-2 transition-all duration-200"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                        </motion.button>
+                      )}
+                      <motion.button 
                         whileHover={{ scale: 1.1, rotate: 90 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => setExpandedGoal(null)}
+                        onClick={() => {
+                          setExpandedGoal(null);
+                          setIsEditing(false);
+                        }}
                         className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all duration-200"
-                    >
+                      >
                         <LucideX size={18} />
-                    </motion.button>
+                      </motion.button>
                     </div>
+                  </div>
                 </div>
                 
                 {/* Content area */}
                 <div className="p-5 overflow-y-auto">
-                    {/* Weightage Badge */}
-                    <div className="flex items-center gap-2 mb-3">
-                    <motion.span 
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-sm text-green-300 px-4 py-1 rounded-full bg-green-500/10 border border-green-500/20 shadow-lg shadow-green-500/5"
-                    >
-                        Weightage: {goal.weightage}%
-                    </motion.span>
-                    <motion.span 
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-sm text-blue-300 px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg shadow-blue-500/5"
-                    >
-                        Category: {goal.goalCategory}
-                    </motion.span>
-                    <motion.span 
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-sm text-purple-300 px-4 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 shadow-lg shadow-purple-500/5"
-                    >
-                        Year: {goal.year}
-                    </motion.span>
-                    </div>
-                    
-                    {/* Goal Details */}
-                    <motion.div 
+                  {/* Weightage Badge */}
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    {isEditing ? (
+                      <>
+                        <div className="w-full mb-3">
+                          <label className="text-xs text-gray-400 mb-1 block">Weightage (%)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={editedGoal.weightage}
+                            onChange={(e) => setEditedGoal({...editedGoal, weightage: e.target.value})}
+                            className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                          />
+                        </div>
+                        <div className="w-full mb-3">
+                          <label className="text-xs text-gray-400 mb-1 block">Category</label>
+                          <input
+                            type="text"
+                            value={editedGoal.goalCategory}
+                            onChange={(e) => setEditedGoal({...editedGoal, goalCategory: e.target.value})}
+                            className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <motion.span 
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.1 }}
+                          className="text-sm text-green-300 px-4 py-1 rounded-full bg-green-500/10 border border-green-500/20 shadow-lg shadow-green-500/5"
+                        >
+                          Weightage: {goal.weightage}%
+                        </motion.span>
+                        <motion.span 
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.2 }}
+                          className="text-sm text-blue-300 px-4 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg shadow-blue-500/5"
+                        >
+                          Category: {goal.goalCategory}
+                        </motion.span>
+                        <motion.span 
+                          initial={{ y: 10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                          className="text-sm text-purple-300 px-4 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 shadow-lg shadow-purple-500/5"
+                        >
+                          Year: {goal.year}
+                        </motion.span>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Goal Details */}
+                  <motion.div 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
                     className="mb-6"
-                    >
+                  >
                     <div className="relative group mb-4">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                        <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
                         <h3 className="text-sm font-medium text-green-200 mb-2">Goal Title</h3>
-                        <p className="text-gray-300">{goal.goalTitle}</p>
-                        </div>
+                        {isEditing ? (
+                          <textarea
+                            value={editedGoal.goalTitle}
+                            onChange={(e) => setEditedGoal({...editedGoal, goalTitle: e.target.value})}
+                            className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50 min-h-[80px]"
+                            placeholder="Enter goal title"
+                          />
+                        ) : (
+                          <p className="text-gray-300">{goal.goalTitle}</p>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="relative group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-                        <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
                         <h3 className="text-sm font-medium text-green-200 mb-2">Metric</h3>
-                        <p className="text-gray-300">{goal.metric}</p>
-                        </div>
+                        {isEditing ? (
+                          <textarea
+                            value={editedGoal.metric}
+                            onChange={(e) => setEditedGoal({...editedGoal, metric: e.target.value})}
+                            className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50 min-h-[120px]"
+                            placeholder="Enter success metric"
+                          />
+                        ) : (
+                          <p className="text-gray-300">{goal.metric}</p>
+                        )}
+                      </div>
                     </div>
-                    </motion.div>
-                    
-                    {/* Ratings */}
-                    <motion.div 
+                  </motion.div>
+                  
+                  {/* Ratings */}
+                  <motion.div 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                     className="mb-6"
-                    >
+                  >
                     <h3 className="text-sm font-medium text-green-200 mb-3">Current Ratings</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-blue-700/30">
+                      <div className="bg-gradient-to-br from-blue-900/20 to-blue-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-blue-700/30">
                         <p className="text-gray-400 text-sm mb-1">Employee Rating</p>
                         <p className="text-3xl font-bold text-blue-400">{goal.employeeRating}<span className="text-lg text-blue-500/70">/4</span></p>
-                        </div>
-                        <div className="bg-gradient-to-br from-green-900/20 to-green-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-green-700/30">
+                      </div>
+                      <div className="bg-gradient-to-br from-green-900/20 to-green-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-green-700/30">
                         <p className="text-gray-400 text-sm mb-1">Manager Rating</p>
                         <p className="text-3xl font-bold text-green-400">{goal.managerRating}<span className="text-lg text-green-500/70">/4</span></p>
-                        </div>
-                        <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-purple-700/30">
-                        <p className="text-gray-400 text-sm mb-1">Admin Rating</p>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-900/20 to-purple-800/10 p-4 rounded-lg text-center backdrop-blur-sm border border-purple-700/30">
+                        <p className="text-gray-400 text-sm mb-1">Supervisor Rating</p>
                         <p className="text-3xl font-bold text-purple-400">{goal.adminRating}<span className="text-lg text-purple-500/70">/4</span></p>
-                        </div>
+                      </div>
                     </div>
-                    </motion.div>
-                    
-                    {/* Rating Selection */}
+                  </motion.div>
+                  
+                  {/* Rating Selection - Only show if not editing */}
+                  {!isEditing && (
                     <motion.div 
-                    initial={{ y: 30, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                    className="mb-4"
+                      initial={{ y: 30, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="mb-4"
                     >
-                    <div className="flex justify-between items-center mb-2">
-                        <label className="text-sm font-medium text-gray-300">Your/Employee Rating</label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-medium text-gray-300">Your Rating</label>
                         <span className="text-sm font-medium px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                        Rating {ratingValue}
+                          Rating {ratingValue}
                         </span>
-                    </div>
-                    
-                    <div className="relative">
+                      </div>
+                      
+                      <div className="relative">
                         <div className="h-2 bg-gray-700 rounded-full w-full">
-                        <motion.div 
+                          <motion.div 
                             initial={{ width: 0 }}
                             animate={{ 
-                            width: `${ratingValue * 25}%`
+                              width: `${ratingValue * 25}%`
                             }}
                             transition={{ duration: 0.8, ease: "easeOut" }}
                             className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg shadow-blue-500/20"
-                        />
+                          />
                         </div>
                         
                         <div className="flex justify-between mt-3">
-                        {[0, 1, 2, 3, 4].map((level) => (
+                          {[0, 1, 2, 3, 4].map((level) => (
                             <motion.button
-                            key={level}
-                            whileHover={{ y: -3, scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setRatingValue(level)}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              key={level}
+                              whileHover={{ y: -3, scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setRatingValue(level)}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
                                 ratingValue === level 
-                                ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30" 
-                                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
-                            }`}
+                                  ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/30" 
+                                  : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
+                              }`}
                             >
-                            {level}
+                              {level}
                             </motion.button>
-                        ))}
+                          ))}
                         </div>
-                    </div>
+                      </div>
                     </motion.div>
-                    
-                    {/* Action Buttons */}
-                    <motion.div 
+                  )}
+                  
+                  {/* Action Buttons */}
+                  <motion.div 
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.4 }}
                     className="flex justify-end gap-3"
-                    >
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={() => setExpandedGoal(null)}
-                        className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
-                    >
-                        Cancel
-                    </motion.button>
-                    <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
-                        onClick={handleGoalRatingSubmit}
-                        disabled={isSubmitting || ratingValue < 1}
-                        className={`px-5 py-2.5 rounded-lg transition-colors ${
-                        isSubmitting || ratingValue < 1
-                            ? 'bg-gray-700/80 text-gray-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/20'
-                        }`}
-                    >
-                        {isSubmitting ? 'Saving...' : 'Save Rating'}
-                    </motion.button>
-                    </motion.div>
+                  >
+                    {isEditing ? (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => setIsEditing(false)}
+                          className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
+                        >
+                          Cancel
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={handleGoalUpdate}
+                          disabled={isSubmitting || !editedGoal.goalName || !editedGoal.goalTitle || !editedGoal.metric || !editedGoal.weightage}
+                          className={`px-5 py-2.5 rounded-lg transition-colors ${
+                            isSubmitting || !editedGoal.goalName || !editedGoal.goalTitle || !editedGoal.metric || !editedGoal.weightage
+                              ? 'bg-gray-700/80 text-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/20'
+                          }`}
+                        >
+                          {isSubmitting ? 'Saving...' : 'Save Changes'}
+                        </motion.button>
+                      </>
+                    ) : (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={() => setExpandedGoal(null)}
+                          className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
+                        >
+                          Cancel
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          onClick={handleGoalRatingSubmit}
+                          disabled={isSubmitting || ratingValue < 1}
+                          className={`px-5 py-2.5 rounded-lg transition-colors ${
+                            isSubmitting || ratingValue < 1
+                              ? 'bg-gray-700/80 text-gray-400 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/20'
+                          }`}
+                        >
+                          {isSubmitting ? 'Saving...' : 'Save Rating'}
+                        </motion.button>
+                      </>
+                    )}
+                  </motion.div>
                 </div>
-                </motion.div>
+              </motion.div>
             </div>
-            );
-        })()}
+          );
+      })()}
         
         </div>
         
