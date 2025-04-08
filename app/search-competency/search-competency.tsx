@@ -507,10 +507,10 @@ export default function SearchCompetencyPage() {
     
             <div className="hidden md:flex items-center space-x-4">
               <Button 
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push(`/publicProfile?userid=${searchedUserId}&username=${searchedUsername}`)}
                 className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
               >
-                My Profile
+                Profile
               </Button>
               <Button 
                 onClick={() => router.push('/competency')}
@@ -592,6 +592,11 @@ export default function SearchCompetencyPage() {
                   <DropdownItem key="profile" className="h-16 gap-2 hover:bg-gray-600 transition rounded-md">
                     <p className="font-semibold text-sm text-gray-300">Signed in as</p>
                     <p className="font-semibold text-sm text-white">{session?.user?.email}</p>
+                  </DropdownItem>
+                  <DropdownItem key="profileroute" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/profile')
+                    }}>
+                    My Profile
                   </DropdownItem>
                   {session?.user?.role === "admin" ? (
                     <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {

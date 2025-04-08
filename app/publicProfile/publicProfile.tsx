@@ -18,6 +18,7 @@ import {
   Dropdown,
   DropdownMenu,
   Avatar,
+  Button,
 } from "@heroui/react";
 
 interface Skill {
@@ -276,6 +277,29 @@ export default function ProfilePage() {
                 {fulltext}
               </h1>
             </div>
+
+            <div className="hidden md:flex items-center space-x-4">
+            {(session?.user?.role === 'admin' || session?.user?.role === 'manager') && (
+                <Button 
+                  onClick={() => router.push(`/search-competency?userid=${searchedUserId}&username=${searchedUsername}`)}
+                  className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+                >
+                  Org Goals
+                </Button>
+              )}
+              <Button 
+                onClick={() => router.push('/competency')}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                My Competencies
+              </Button>
+              <Button 
+                onClick={() => router.push('/goals')}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                My Goals
+              </Button>
+            </div>
     
             {/* Right Section - Search Bar & Sign Out */}
             <div className="flex items-center gap-4">
@@ -330,8 +354,14 @@ export default function ProfilePage() {
                     }}>
                     My Profile
                   </DropdownItem>
-                  <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
-                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
+                  {session?.user?.role === "admin" ? (
+                    <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/upload-excel')
+                    }}>Upload Excel</DropdownItem>
+                  ) : null}
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/edit-profile')
+                  }}>Edit Profile</DropdownItem>
                   <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
                     Log Out
                   </DropdownItem>

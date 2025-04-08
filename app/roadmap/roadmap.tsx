@@ -260,7 +260,12 @@ export default function RoadmapForm() {
                         key={user.id}
                         className="p-2 hover:bg-gray-400 cursor-pointer text-white"
                         onClick={() => {
-                          router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          // Route differently based on user role
+                          if (session?.user?.role === "admin" || session?.user?.role === "manager") {
+                            router.push(`/search-competency?userid=${user.id}&username=${user.name}`);
+                          } else {
+                            router.push(`/publicProfile?userid=${user.id}&username=${user.name}`);
+                          }
                           setQuery(""); // Clear search input
                           setSearchUsers([]); // Clear results
                         }}
@@ -289,8 +294,14 @@ export default function RoadmapForm() {
                     }}>
                     My Profile
                   </DropdownItem>
-                  <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
-                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
+                  {session?.user?.role === "admin" ? (
+                    <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/upload-excel')
+                    }}>Upload Excel</DropdownItem>
+                  ) : null}
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/edit-profile')
+                  }}>Edit Profile</DropdownItem>
                   <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
                     Log Out
                   </DropdownItem>

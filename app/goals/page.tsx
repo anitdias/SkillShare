@@ -241,16 +241,25 @@ export default function GoalsPage() {
               />
             </DropdownTrigger>
             <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
-              <DropdownItem key="profile" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
-                  router.push('/profile')
-                }}>
-                My Profile
-              </DropdownItem>
-              <DropdownItem key="settings" className="hover:bg-gray-600 transition p-3 rounded-md">My Settings</DropdownItem>
-              <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md">Help & Feedback</DropdownItem>
-              <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
-                Log Out
-              </DropdownItem>
+            <DropdownItem key="profile" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/profile')
+                    }}>
+                    My Profile
+                  </DropdownItem>
+                  <DropdownItem key="competnecy" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/competency')
+                  }}>Edit Profile</DropdownItem>
+                  {session?.user?.role === "admin" ? (
+                    <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/upload-excel')
+                    }}>Upload Excel</DropdownItem>
+                  ) : null}
+                  <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/edit-profile')
+                  }}>Edit Profile</DropdownItem>
+                  <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
+                    Log Out
+                  </DropdownItem>
             </DropdownMenu>
           </Dropdown>
         </div>
