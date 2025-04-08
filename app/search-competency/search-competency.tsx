@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { signOut } from "next-auth/react";
-import { Search, LucideX } from 'lucide-react';
+import { Search, LucideX, LucidePlus} from 'lucide-react';
 import { motion } from "framer-motion";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
@@ -94,6 +94,14 @@ export default function SearchCompetencyPage() {
     metric: "",
     weightage: "",
     goalCategory: ""
+  });
+  const [showAddGoalModal, setShowAddGoalModal] = useState(false);
+  const [newGoal, setNewGoal] = useState({
+    goalName: '',
+    goalTitle: '',
+    metric: '',
+    weightage: '',
+    goalCategory: 'Performance' // Default category
   });
 
   useEffect(() => {
@@ -385,6 +393,49 @@ export default function SearchCompetencyPage() {
     }
   };
 
+  const handleAddGoal = async () => {
+    if (!searchedUserId || !newGoal.goalName || !newGoal.goalTitle || !newGoal.metric || !newGoal.weightage) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/add-goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: searchedUserId,
+          goalName: newGoal.goalName,
+          goalTitle: newGoal.goalTitle,
+          metric: newGoal.metric,
+          weightage: parseInt(newGoal.weightage),
+          goalCategory: newGoal.goalCategory,
+          year: selectedYear
+        }),
+      });
+      
+      if (response.ok) {
+        // Reset form and close modal
+        setNewGoal({
+          goalName: '',
+          goalTitle: '',
+          metric: '',
+          weightage: '',
+          goalCategory: 'Performance'
+        });
+        setShowAddGoalModal(false);
+        
+        // Refresh data
+        await fetchUserData();
+      } else {
+        console.error('Failed to add goal');
+      }
+    } catch (error) {
+      console.error('Error adding goal:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Create tabs for competencies
   const competencyTabs = groupedCompetencies.map(group => ({
     title: group.type,
@@ -647,6 +698,17 @@ export default function SearchCompetencyPage() {
                 <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Performance</span>
                 <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">Goals</h1>
                 </div>
+                {/* Add Goal Button - Only visible for admin/manager */}
+                {(session?.user?.role === 'admin' || session?.user?.role === 'manager') && (
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      onClick={() => setShowAddGoalModal(true)}
+                      className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 hover:border-blue-400 text-white rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-blue-500/20"
+                    >
+                      <LucidePlus size={20} />
+                    </Button>
+                  </motion.div>
+                )}
             </div>
             
             <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
@@ -1280,6 +1342,172 @@ export default function SearchCompetencyPage() {
             </div>
           );
       })()}
+
+{showAddGoalModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-gray-700 p-0 max-w-2xl w-full shadow-2xl overflow-auto max-h-[85vh]"
+            >
+              {/* Header with gradient background */}
+              <div className="relative bg-neutral-950 p-4">
+                <div 
+                  className="absolute top-0 left-0 w-full h-full opacity-40"
+                  style={{
+                    backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px)",
+                    backgroundSize: "10px 10px"
+                  }}
+                />
+                
+                <div className="flex justify-between items-center relative z-10">
+                  <div>
+                    <div className="text-xs font-semibold text-green-200 uppercase tracking-wider mb-1">
+                      Add New Goal
+                    </div>
+                    <h2 className="text-2xl text-white font-bold">
+                      Create Goal for {searchedUsername}
+                    </h2>
+                  </div>
+                  <motion.button 
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setShowAddGoalModal(false)}
+                    className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all duration-200"
+                  >
+                    <LucideX size={18} />
+                  </motion.button>
+                </div>
+              </div>
+              
+              {/* Content area */}
+              <div className="p-6">
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="space-y-6"
+                >
+                  {/* Goal Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Goal Name</label>
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                        <textarea
+                          value={newGoal.goalName}
+                          onChange={(e) => setNewGoal({...newGoal, goalName: e.target.value})}
+                          className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50 min-h-[80px]"
+                          placeholder="Enter goal name"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Goal Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Goal Title</label>
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                        <textarea
+                          value={newGoal.goalTitle}
+                          onChange={(e) => setNewGoal({...newGoal, goalTitle: e.target.value})}
+                          className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50 min-h-[80px]"
+                          placeholder="Enter goal title"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Metric */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Metric</label>
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                        <textarea
+                          value={newGoal.metric}
+                          onChange={(e) => setNewGoal({...newGoal, metric: e.target.value})}
+                          className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50 min-h-[120px]"
+                          placeholder="Enter success metric"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Weightage */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Weightage (%)</label>
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={newGoal.weightage}
+                          onChange={(e) => setNewGoal({...newGoal, weightage: e.target.value})}
+                          className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                          placeholder="Enter weightage percentage"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Goal Category */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Goal Category</label>
+                    <div className="relative group">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-green-500/20 via-blue-500/20 to-green-500/20 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+                      <div className="relative bg-neutral-800/50 rounded-lg border border-gray-700 shadow-xl p-4">
+                        <input
+                          type="text"
+                          value={newGoal.goalCategory}
+                          onChange={(e) => setNewGoal({...newGoal, goalCategory: e.target.value})}
+                          className="bg-neutral-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                          placeholder="Enter goal category"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                {/* Action Buttons */}
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex justify-end gap-3 mt-8"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowAddGoalModal(false)}
+                    className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleAddGoal}
+                    disabled={isSubmitting || !newGoal.goalName || !newGoal.goalTitle || !newGoal.metric || !newGoal.weightage}
+                    className={`px-5 py-2.5 rounded-lg transition-colors ${
+                      isSubmitting || !newGoal.goalName || !newGoal.goalTitle || !newGoal.metric || !newGoal.weightage
+                        ? 'bg-gray-700/80 text-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/20'
+                    }`}
+                  >
+                    {isSubmitting ? 'Adding...' : 'Add Goal'}
+                  </motion.button>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+        )}
         
         </div>
         
