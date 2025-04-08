@@ -248,7 +248,7 @@ export default function GoalsPage() {
                   </DropdownItem>
                   <DropdownItem key="competnecy" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/competency')
-                  }}>Edit Profile</DropdownItem>
+                  }}>Competencies</DropdownItem>
                   {session?.user?.role === "admin" ? (
                     <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                       router.push('/upload-excel')
