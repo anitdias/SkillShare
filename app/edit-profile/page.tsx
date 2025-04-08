@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar } from "@heroui/react";
 import { ArrowLeft, Save } from "lucide-react";
 import { BackgroundBeams } from "@/components/ui/background-beams";
+import { motion } from "framer-motion";
 
 export default function EditProfilePage() {
   const { data: session, status, update } = useSession();
@@ -86,13 +87,12 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-950">
-        <div className="p-6 bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center">
-          <div className="w-12 h-12 border-4 border-t-transparent border-white rounded-full animate-spin" />
-          <p className="mt-4 text-lg font-semibold text-white/90 tracking-wide">
-            Loading profile...
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-neutral-950">
+        <motion.div
+          className="w-12 h-12 border-4 border-t-transparent border-white rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }
