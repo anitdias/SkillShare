@@ -5,10 +5,14 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**", // Allow all remote images (use specific domains if needed)
+        hostname: "lh3.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      }
     ],
-    domains: ["lh3.googleusercontent.com", "unsplash.com"], // Add domains as needed
+    unoptimized: true, // This helps with local image loading in static pages
   },
 };
 
