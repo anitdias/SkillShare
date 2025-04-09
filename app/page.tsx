@@ -44,7 +44,7 @@ export default function ThreeDMarqueeDemo() {
         <span className="relative z-20 inline-block rounded-xl bg-blue-500/40 px-4 py-1 text-white underline decoration-sky-500 decoration-[6px] underline-offset-[16px] backdrop-blur-sm">
          in one
         </span>{" "}
-         place
+         place.
       </h2>
       <p className="relative z-20 mx-auto max-w-2xl py-8 text-center text-xl text-neutral-200 md:text-xl font-bold">
       Get Started Today

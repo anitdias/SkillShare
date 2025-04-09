@@ -1,6 +1,6 @@
 'use client';
 import { useSession } from 'next-auth/react';
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { LucideUser, LucideMail, LucideLock } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { SparklesCore } from "@/components/ui/sparkles";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -65,8 +66,20 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 bg-[#3b3b3b] border-[#3b3b3b] shadow-xl rounded-xl">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 w-full h-full">
+        <SparklesCore
+          id="tsparticles"
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleColor="#FFFFFF"
+          particleDensity={100}
+          speed={1}
+          className="w-full h-full"
+        />
+      </div>
+      <Card className="w-full max-w-md p-8 space-y-6 bg-[#000000]/90 border-[#3b3b3b] shadow-xl rounded-xl relative z-10">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
           <p className="text-white">Join SkillShare today</p>

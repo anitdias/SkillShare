@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { LucideMail, LucideLock } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
+import { SparklesCore } from "@/components/ui/sparkles";
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -50,8 +51,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#222222] via-[#333333] to-[#444444] flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 bg-[#3b3b3b] border-[#3b3b3b] shadow-xl rounded-xl">
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 w-full h-full">
+        <SparklesCore
+          id="tsparticles"
+          background="transparent"
+          minSize={0.6}
+          maxSize={1.4}
+          particleColor="#FFFFFF"
+          particleDensity={100}
+          speed={1}
+          className="w-full h-full"
+        />
+      </div>
+      
+      <Card className="w-full max-w-md p-8 space-y-6 bg-[#000000]/90 border-[#3b3b3b] shadow-xl rounded-xl relative z-10">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
           <p className="text-white">Sign in to continue to SkillShare</p>
