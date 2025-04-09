@@ -34,7 +34,7 @@ export const ThreeDMarquee = ({
               <motion.div
                 animate={{ y: colIndex % 2 === 0 ? 100 : -100 }}
                 transition={{
-                  duration: colIndex % 2 === 0 ? 2 : 5,
+                  duration: colIndex % 2 === 0 ? 5 : 7,
                   repeat: Infinity,
                   repeatType: "reverse",
                 }}
