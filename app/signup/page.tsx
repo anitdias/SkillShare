@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { LucideUser, LucideMail, LucideLock } from 'lucide-react';
+import { LucideUser, LucideMail, LucideLock, LucideIdCard } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
@@ -16,6 +16,7 @@ export default function SignupPage() {
     name: '',
     email: '',
     password: '',
+    employeeNo: '', // Add employee number field
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -111,6 +112,20 @@ export default function SignupPage() {
                 required
               />
               <LucideMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Employee Number"
+                value={formData.employeeNo}
+                onChange={(e) => setFormData({ ...formData, employeeNo: e.target.value })}
+                className="pl-10 text-white"
+                required
+              />
+              <LucideIdCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             </div>
           </div>
 

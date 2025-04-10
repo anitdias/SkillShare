@@ -106,10 +106,14 @@ export default function ProfilePage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
+      if (!session?.user?.employeeNo) {
+        router.push('/verify-employee');
+        return;
+      }
       fetchUserData();
-      setSessionKey(prev => prev + 1); // Increment the key when session changes
+      setSessionKey(prev => prev + 1);
     }
-  }, [status, router, session?.user?.name, session?.user?.description, session?.user?.designation]);
+  }, [status, router, session?.user?.name, session?.user?.description, session?.user?.designation, session?.user?.employeeNo]);
 
   const testimonials = useMemo(() => [
     {
@@ -752,6 +756,9 @@ export default function ProfilePage() {
                   <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/edit-profile')
                   }}>Edit Profile</DropdownItem>
+                  <DropdownItem key="org-chart" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/org-chart')
+                  }}>Org-Chart</DropdownItem>
                   <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
                     Log Out
                   </DropdownItem>

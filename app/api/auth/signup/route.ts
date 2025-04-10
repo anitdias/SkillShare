@@ -2,14 +2,15 @@ import prisma from "../../../../lib/prisma";
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import _ from 'lodash';
+import { UserRole } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
     // Parse the incoming JSON request
-    const { name, email, password } = await request.json();
+    const { name, email, password, employeeNo } = await request.json();
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !employeeNo) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -21,27 +22,56 @@ export async function POST(request: Request) {
       where: {
         OR: [
           { email },
-          { name }
+          { name },
+          { employeeNo }
         ]
       }
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { message: 'User already exists' },
+        { message: 'User already exists with this email, username, or employee number' },
         { status: 400 }
       );
+    }
+
+    // Check if employee number exists in organization chart
+    const orgEntry = await prisma.organizationChart.findUnique({
+      where: { employeeNo },
+      include: { subordinates: true }
+    });
+
+    if (!orgEntry) {
+      return NextResponse.json(
+        { message: 'Employee number not found in organization chart' },
+        { status: 400 }
+      );
+    }
+
+    // Determine role based on organizational structure
+    let role: UserRole = 'user';
+    
+    // Check if user has subordinates (manager)
+    if (orgEntry.subordinates.length > 0) {
+      role = 'manager';
+    }
+    
+    // Check if user is top-level manager (admin)
+    if (!orgEntry.managerNo) {
+      role = 'admin';
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with role and employee number
     const user = await prisma.user.create({
       data: {
         name,
         email,
         passwordHash: hashedPassword,
+        employeeNo,
+        role,
       },
     });
 
@@ -49,15 +79,19 @@ export async function POST(request: Request) {
     const userWithoutPassword = _.omit(user, ['passwordHash']);
 
     return NextResponse.json(
-      { message: 'User created successfully', user: userWithoutPassword },
+      { 
+        message: 'User created successfully', 
+        user: userWithoutPassword,
+        role 
+      },
       { status: 201 }
     );
   } catch (error) {
     // Log the error properly
     if (error instanceof Error) {
-      console.error('Signup error:', error.message); // Log only the message
+      console.error('Signup error:', error.message);
     } else {
-      console.error('Signup error:', error); // In case error is not an instance of Error
+      console.error('Signup error:', error);
     }
 
     return NextResponse.json(

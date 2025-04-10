@@ -20,25 +20,27 @@ enum UserRole {
 }
 
 
-model User{
-  id              String  @id @default(uuid())
-  name            String?
-  passwordHash    String?
-  email           String  @unique
-  image           String?
-  designation     String?
-  description     String?
-  role            UserRole @default(user)
-  createdAt       DateTime @default(now())
-  emailVerified   DateTime?
-  recommendation  Json?
-  skills          UserSkill[]
-  accounts        Account[]
-  sessions        Session[]
-  skillWishlist   SkillWishlist[]
-  roadmap         Roadmap[]
-  userCompetencies UserCompetency[]
-  userGoals    UserGoal[]
+model User {
+  id                String   @id @default(uuid())
+  name              String?
+  passwordHash      String?
+  email             String   @unique
+  image             String?
+  designation       String?
+  description       String?
+  role              UserRole @default(user)
+  createdAt         DateTime @default(now())
+  emailVerified     DateTime?
+  recommendation    Json?
+  skills            UserSkill[]
+  accounts          Account[]
+  sessions          Session[]
+  skillWishlist     SkillWishlist[]
+  roadmap           Roadmap[]
+  userCompetencies  UserCompetency[]
+  userGoals         UserGoal[]
+  employeeNo        String?  @unique
+  organizationInfo  OrganizationChart? @relation("UserToOrgChart", fields: [employeeNo], references: [employeeNo])
 }
 
 model SkillCategory {
@@ -185,5 +187,20 @@ model UserGoal {
   goal  Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@unique([userId, goalId]) // Ensuring unique goal per user
+}
+
+model OrganizationChart {
+  id             String   @id @default(uuid())
+  employeeNo     String   @unique
+  employeeName   String
+  managerNo      String?  // Display only
+  managerName    String?  // Display only
+  effectiveDate  DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User?    @relation("UserToOrgChart")
+  manager        OrganizationChart? @relation("ManagerToEmployee", fields: [managerNo], references: [employeeNo])
+  subordinates   OrganizationChart[] @relation("ManagerToEmployee")
 }
 

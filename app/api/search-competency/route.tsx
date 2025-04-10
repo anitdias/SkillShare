@@ -69,6 +69,9 @@ export async function POST(request: Request) {
     const userGoals = await prisma.userGoal.findMany({
       where: { 
         userId: searchedUserId,
+        goal: {
+          year: Number(year)
+        }
       },
       include: {
         goal: true,

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { BackgroundBeams } from "@/components/ui/background-beams";
-import { ArrowLeft, Upload, FileSpreadsheet, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, Upload, FileSpreadsheet, Check, AlertCircle, Users, BarChart } from "lucide-react";
 import {
   DropdownItem,
   DropdownTrigger,
@@ -14,7 +14,7 @@ import {
   Avatar,
 } from "@heroui/react";
 import { signOut } from "next-auth/react";
-import {  Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 
 interface SearchUser {
@@ -33,6 +33,11 @@ export default function UploadExcel() {
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [activeTab, setActiveTab] = useState("competencies");
+  const [orgFile, setOrgFile] = useState<File | null>(null);
+  const [isOrgUploading, setIsOrgUploading] = useState(false);
+  const [orgUploadStatus, setOrgUploadStatus] = useState<"idle" | "success" | "error">("idle");
+  const [orgStatusMessage, setOrgStatusMessage] = useState("");
 
   const fulltext = "<SkillShare/>";
 
@@ -103,6 +108,58 @@ export default function UploadExcel() {
       setStatusMessage(error instanceof Error ? error.message : "An unknown error occurred");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleOrgFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      // Check if file is Excel
+      if (
+        selectedFile.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+        selectedFile.type === "application/vnd.ms-excel"
+      ) {
+        setOrgFile(selectedFile);
+        setOrgUploadStatus("idle");
+        setOrgStatusMessage("");
+      } else {
+        setOrgFile(null);
+        setOrgUploadStatus("error");
+        setOrgStatusMessage("Please select a valid Excel file (.xlsx or .xls)");
+      }
+    }
+  };
+
+  const handleOrgUpload = async () => {
+    if (!orgFile) return;
+  
+    setIsOrgUploading(true);
+    setOrgUploadStatus("idle");
+    setOrgStatusMessage("");
+  
+    try {
+      const formData = new FormData();
+      formData.append("file", orgFile);
+  
+      const response = await fetch("/api/org-chart-upload", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        setOrgUploadStatus("success");
+        setOrgStatusMessage(`Successfully processed ${data.entriesAdded} organization entries. Top level manager: ${data.topLevelManager}`);
+      } else {
+        throw new Error(data.error || "Failed to upload organization chart");
+      }
+    } catch (error) {
+      console.error("Error uploading organization chart:", error);
+      setOrgUploadStatus("error");
+      setOrgStatusMessage(error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
+      setIsOrgUploading(false);
     }
   };
 
@@ -224,9 +281,49 @@ export default function UploadExcel() {
         </Button>
         
         <div className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-sm p-8 rounded-xl shadow-lg border border-gray-800/50">
-          <h1 className="text-3xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mb-6">
-            Competency Upload
-          </h1>
+          <div className="mb-6 border-b border-gray-700">
+            <div className="flex">
+              <button
+                onClick={() => setActiveTab("competencies")}
+                className={`px-6 py-3 font-medium text-sm transition-all duration-200 relative ${
+                  activeTab === "competencies" 
+                    ? "text-blue-400" 
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart size={18} />
+                  <span>Competency Upload</span>
+                </div>
+                {activeTab === "competencies" && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></div>
+                )}
+              </button>
+              
+              <button
+                onClick={() => setActiveTab("orgchart")}
+                className={`px-6 py-3 font-medium text-sm transition-all duration-200 relative ${
+                  activeTab === "orgchart" 
+                    ? "text-blue-400" 
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Users size={18} />
+                  <span>Organization Chart</span>
+                </div>
+                {activeTab === "orgchart" && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-500"></div>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {activeTab === "competencies" && (
+            <>
+              <h1 className="text-3xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mb-6">
+                Competency Upload
+              </h1>
           
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-300 mb-2">Select Year</label>
@@ -313,9 +410,103 @@ export default function UploadExcel() {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+            </>
+          )}
+          {activeTab === "orgchart" && (
+            <>
+              <h1 className="text-3xl bg-clip-text text-transparent bg-gradient-to-b from-neutral-200 to-neutral-600 font-bold font-mono mb-6">
+                Organization Chart Upload
+              </h1>
+              
+              <div className="space-y-6">
+                <div className="bg-gray-800/30 p-6 rounded-lg border border-gray-700/50">
+                  <div className="flex items-center mb-4">
+                    <Users className="text-blue-400 mr-2" size={24} />
+                    <h2 className="text-xl text-white font-semibold">Upload Organization Chart</h2>
+                  </div>
+                  
+                  <p className="text-gray-400 mb-6">
+                    Upload an Excel file containing your organization structure. The file should have the following columns:
+                    <span className="block mt-2 font-mono text-xs bg-gray-900 p-2 rounded">
+                      Employee No, Employee Name, Manager No, Manager Name, Effective Date
+                    </span>
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                      <input
+                        type="file"
+                        id="orgchart-file"
+                        accept=".xlsx,.xls"
+                        onChange={handleOrgFileChange}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="orgchart-file"
+                        className="cursor-pointer flex flex-col items-center justify-center"
+                      >
+                        <Upload className="text-gray-400 mb-2" size={40} />
+                        <p className="text-gray-300 font-medium mb-1">
+                          {orgFile ? orgFile.name : "Click to select Excel file"}
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          {orgFile ? `${(orgFile.size / 1024 / 1024).toFixed(2)} MB` : ".xlsx or .xls files only"}
+                        </p>
+                      </label>
+                    </div>
+                    
+                    <div className="bg-gray-900/50 p-4 rounded-md border border-gray-700">
+                      <h3 className="text-white text-sm font-medium mb-2">File Format Requirements:</h3>
+                      <ul className="text-gray-400 text-sm list-disc pl-5 space-y-1">
+                        <li>First row should contain column headers</li>
+                        <li>Second row should be the top-level manager (with NA as Manager No)</li>
+                        <li>All employees must have a unique Employee No</li>
+                        <li>All managers (except top-level) must exist as employees in the file</li>
+                      </ul>
+                    </div>
+                    
+                    {orgUploadStatus === "error" && (
+                      <div className="bg-red-900/30 border border-red-800 p-4 rounded-md flex items-start">
+                        <AlertCircle className="text-red-500 mr-2 mt-0.5 flex-shrink-0" size={18} />
+                        <p className="text-red-300 text-sm">{orgStatusMessage}</p>
+                      </div>
+                    )}
+                    
+                    {orgUploadStatus === "success" && (
+                      <div className="bg-green-900/30 border border-green-800 p-4 rounded-md flex items-start">
+                        <Check className="text-green-500 mr-2 mt-0.5 flex-shrink-0" size={18} />
+                        <p className="text-green-300 text-sm">{orgStatusMessage}</p>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-end">
+                      <Button
+                        onClick={handleOrgUpload}
+                        disabled={!orgFile || isOrgUploading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md flex items-center gap-2"
+                      >
+                        {isOrgUploading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Upload size={18} />
+                            Upload and Process
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
+        
