@@ -4,7 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { signOut } from "next-auth/react";
-import { Search, LucideX, LucidePlus} from 'lucide-react';
+import { Search, LucideX, LucidePlus, AlertCircle} from 'lucide-react';
 import { motion } from "framer-motion";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { AnimatedTestimonials } from "@/components/ui/animated-testimonials";
@@ -101,8 +101,9 @@ export default function SearchCompetencyPage() {
     goalTitle: '',
     metric: '',
     weightage: '',
-    goalCategory: 'Performance' // Default category
+    goalCategory: '' // Default category
   });
+  const [error, setError] = useState('');
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -251,17 +252,19 @@ export default function SearchCompetencyPage() {
     if (!expandedCompetency || !searchedUserId || ratingValue < 1 || ratingValue > 4) return;
     
     setIsSubmitting(true);
+    setError(''); // Clear any previous errors
     
     try {
-      // Find the competency to update
       const competencyType = groupedCompetencies.find(group => 
         group.competencies.some(comp => comp.id === expandedCompetency)
       );
-      
       if (!competencyType) return;
       
       const competency = competencyType.competencies.find(comp => comp.id === expandedCompetency);
       if (!competency) return;
+      
+      // Store the current expanded competency ID
+      const currentExpandedCompetency = expandedCompetency;
       
       const response = await fetch('/api/update-competency-rating', {
         method: 'PUT',
@@ -275,13 +278,18 @@ export default function SearchCompetencyPage() {
         }),
       });
       
+      const result = await response.json();
+      
       if (response.ok) {
-        // Refresh data after successful update
-        fetchUserData();
+        // Refresh data and restore expanded state
+        await fetchUserData();
+        setExpandedCompetency(currentExpandedCompetency);
       } else {
-        console.error('Failed to update rating');
+        setError(result.message || 'Failed to update competency rating');
+        console.error('Failed to update competency rating:', result.message);
       }
     } catch (error) {
+      setError('Error updating competency rating. Please try again.');
       console.error('Error updating competency rating:', error);
     } finally {
       setIsSubmitting(false);
@@ -292,6 +300,7 @@ export default function SearchCompetencyPage() {
     if (!expandedGoal || !searchedUserId || ratingValue < 1 || ratingValue > 4) return;
     
     setIsSubmitting(true);
+    setError(''); // Clear any previous errors
     
     try {
       const goal = groupedGoals.find(g => g.id === expandedGoal);
@@ -312,14 +321,18 @@ export default function SearchCompetencyPage() {
         }),
       });
       
+      const result = await response.json();
+      
       if (response.ok) {
         // Refresh data and restore expanded state
         await fetchUserData();
         setExpandedGoal(currentExpandedGoal);
       } else {
-        console.error('Failed to update goal rating');
+        setError(result.message || 'Failed to update goal rating');
+        console.error('Failed to update goal rating:', result.message);
       }
     } catch (error) {
+      setError('Error updating goal rating. Please try again.');
       console.error('Error updating goal rating:', error);
     } finally {
       setIsSubmitting(false);
@@ -387,7 +400,6 @@ export default function SearchCompetencyPage() {
       }
     } catch (error) {
       console.error('Error updating goal:', error);
-      alert('Failed to update goal. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -397,6 +409,7 @@ export default function SearchCompetencyPage() {
     if (!searchedUserId || !newGoal.goalName || !newGoal.goalTitle || !newGoal.metric || !newGoal.weightage) return;
     
     setIsSubmitting(true);
+    setError(''); // Clear any previous errors
     
     try {
       const response = await fetch('/api/add-goal', {
@@ -413,6 +426,8 @@ export default function SearchCompetencyPage() {
         }),
       });
       
+      const result = await response.json();
+      
       if (response.ok) {
         // Reset form and close modal
         setNewGoal({
@@ -420,16 +435,18 @@ export default function SearchCompetencyPage() {
           goalTitle: '',
           metric: '',
           weightage: '',
-          goalCategory: 'Performance'
+          goalCategory: ''
         });
         setShowAddGoalModal(false);
         
         // Refresh data
         await fetchUserData();
       } else {
-        console.error('Failed to add goal');
+        setError(result.message || 'Failed to add goal');
+        console.error('Failed to add goal:', result.message);
       }
     } catch (error) {
+      setError('Error adding goal. Please try again.');
       console.error('Error adding goal:', error);
     } finally {
       setIsSubmitting(false);
@@ -831,7 +848,9 @@ export default function SearchCompetencyPage() {
                       <motion.button 
                         whileHover={{ scale: 1.1, rotate: 90 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => setExpandedCompetency(null)}
+                        onClick={() => {
+                          setExpandedCompetency(null);
+                          setError('');}}
                         className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all duration-200"
                       >
                         <LucideX size={18} />
@@ -1001,6 +1020,17 @@ export default function SearchCompetencyPage() {
                         </div>
                       </div>
                     </motion.div>
+
+                    {error && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300 text-sm flex items-start"
+                      >
+                        <AlertCircle className="text-red-500 mr-2 mt-0.5 flex-shrink-0" size={18} />
+                        <p>{error}</p>
+                      </motion.div>
+                    )}
                     
                     {/* Action Buttons */}
                     <motion.div 
@@ -1012,7 +1042,9 @@ export default function SearchCompetencyPage() {
                       <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => setExpandedCompetency(null)}
+                        onClick={() => {setExpandedCompetency(null);
+                          setError('');
+                        }}
                         className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
                       >
                         Cancel
@@ -1100,6 +1132,7 @@ export default function SearchCompetencyPage() {
                         onClick={() => {
                           setExpandedGoal(null);
                           setIsEditing(false);
+                          setError('');
                         }}
                         className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all duration-200"
                       >
@@ -1166,6 +1199,7 @@ export default function SearchCompetencyPage() {
                     )}
                   </div>
                   
+                  {/* Goal Details */}
                   {/* Goal Details */}
                   <motion.div 
                     initial={{ y: 20, opacity: 0 }}
@@ -1279,6 +1313,18 @@ export default function SearchCompetencyPage() {
                       </div>
                     </motion.div>
                   )}
+
+                  {/* Only show error in non-editing mode here */}
+                  {error && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300 text-sm flex items-start"
+                    >
+                      <AlertCircle className="text-red-500 mr-2 mt-0.5 flex-shrink-0" size={18} />
+                      <p>{error}</p>
+                    </motion.div>
+                  )}
                   
                   {/* Action Buttons */}
                   <motion.div 
@@ -1316,7 +1362,9 @@ export default function SearchCompetencyPage() {
                         <motion.button
                           whileHover={{ scale: 1.03 }}
                           whileTap={{ scale: 0.97 }}
-                          onClick={() => setExpandedGoal(null)}
+                          onClick={() => {setExpandedGoal(null);
+                            setError('');
+                          }}
                           className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
                         >
                           Cancel
@@ -1374,7 +1422,10 @@ export default function SearchCompetencyPage() {
                   <motion.button 
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => setShowAddGoalModal(false)}
+                    onClick={() => {
+                      setShowAddGoalModal(false);
+                      setError(''); // Clear error when closing modal
+                    }}
                     className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 transition-all duration-200"
                   >
                     <LucideX size={18} />
@@ -1384,6 +1435,7 @@ export default function SearchCompetencyPage() {
               
               {/* Content area */}
               <div className="p-6">
+              
                 <motion.div 
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -1474,6 +1526,17 @@ export default function SearchCompetencyPage() {
                     </div>
                   </div>
                 </motion.div>
+
+                {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-6 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-300 text-sm flex items-start mt-2"
+                >
+                  <AlertCircle className="text-red-500 mr-2 mt-0.5 flex-shrink-0" size={18} />
+                  <p>{error}</p>
+                </motion.div>
+              )}
                 
                 {/* Action Buttons */}
                 <motion.div 
@@ -1485,7 +1548,10 @@ export default function SearchCompetencyPage() {
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => setShowAddGoalModal(false)}
+                    onClick={() => {
+                      setShowAddGoalModal(false);
+                      setError('');
+                    }}
                     className="px-5 py-2.5 bg-gray-800/80 text-white rounded-lg hover:bg-gray-700/80 transition-colors border border-gray-700/50"
                   >
                     Cancel

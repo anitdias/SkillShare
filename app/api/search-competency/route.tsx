@@ -144,14 +144,6 @@ export async function PUT(request: Request) {
       );
     }
 
-    // Check if user has admin or manager role
-    if (session.user.role !== "admin" && session.user.role !== "manager") {
-      return NextResponse.json(
-        { message: "Forbidden: Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
     // Extract and validate data from request body
     const data = await request.json();
     console.log("Received data:", data); // Add logging
@@ -160,6 +152,57 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
+      );
+    }
+
+    // Check if user has admin role - admins can update any employee's goals
+    if (session.user.role === "admin") {
+      // Admin can proceed without additional checks
+    } 
+    // For managers, check if they are the direct manager of the employee
+    else if (session.user.role === "manager") {
+      // Get the employee's organization info
+      const employeeOrgInfo = await prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { 
+          employeeNo: true 
+        }
+      });
+
+      if (!employeeOrgInfo?.employeeNo) {
+        return NextResponse.json(
+          { message: "Employee organization information not found" },
+          { status: 404 }
+        );
+      }
+
+      // Get the manager's employee number directly from session
+      if (!session.user.employeeNo) {
+        return NextResponse.json(
+          { message: "Manager organization information not found" },
+          { status: 404 }
+        );
+      }
+
+      // Check if the manager is the direct manager of the employee
+      const isDirectManager = await prisma.organizationChart.findFirst({
+        where: {
+          employeeNo: employeeOrgInfo.employeeNo,
+          managerNo: session.user.employeeNo
+        }
+      });
+
+      if (!isDirectManager) {
+        return NextResponse.json(
+          { message: "Forbidden: You can only update goals for your direct subordinates" },
+          { status: 403 }
+        );
+      }
+    } else {
+      // Not admin or manager
+      return NextResponse.json(
+        { message: "Forbidden: Insufficient permissions" },
+        { status: 403 }
       );
     }
 
