@@ -25,6 +25,11 @@ interface OrgNode {
   children: OrgNode[];
 }
 
+interface SearchUser {
+  id: string;
+  name: string;
+}
+
 const TreeNode = ({ node, level = 0 }: { node: OrgNode; level?: number }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
@@ -232,7 +237,7 @@ export default function OrganizationPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-2">Organization Structure</h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Explore our company's hierarchical structure and team organization
+            Explore our companys hierarchical structure and team organization
           </p>
         </div>
 
@@ -259,7 +264,7 @@ export default function OrganizationPage() {
               <Users size={48} className="text-gray-500 mx-auto mb-4" />
               <h3 className="text-xl font-medium text-white mb-2">No Organization Data</h3>
               <p className="text-gray-400">
-                The organization chart hasn't been uploaded yet.
+                The organization chart hasnt been uploaded yet.
               </p>
             </div>
           )}
