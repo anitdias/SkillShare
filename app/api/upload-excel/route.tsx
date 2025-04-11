@@ -6,7 +6,7 @@ import prisma from "@/lib/prisma";
 import { chunk } from "lodash";
 
 // Set smaller batch sizes to avoid timeouts
-const BATCH_SIZE = 25;
+const BATCH_SIZE = 10;
 
 export async function POST(req: NextRequest) {
   try {
@@ -113,6 +113,24 @@ async function processDataInBackground(
   goals: { category: string; name: string; title: string; metric: string; weightage: number; year: number }[]
 ) {
   try {
+    // Update status to PROCESSING
+    await prisma.systemStatus.upsert({
+      where: { key: `excel_import_${currentYear}` },
+      update: { 
+        value: JSON.stringify({
+          status: "PROCESSING",
+          startedAt: new Date().toISOString()
+        })
+      },
+      create: {
+        key: `excel_import_${currentYear}`,
+        value: JSON.stringify({
+          status: "PROCESSING",
+          startedAt: new Date().toISOString()
+        })
+      }
+    });
+
     // Find competency IDs for the current year to delete
     const competencyIdsForYear = await prisma.competency.findMany({
       where: { year: currentYear },
@@ -128,6 +146,18 @@ async function processDataInBackground(
     });
     
     const goalIds = goalIdsForYear.map(goal => goal.id);
+
+    // Update status to indicate deletion in progress
+    await prisma.systemStatus.update({
+      where: { key: `excel_import_${currentYear}` },
+      data: { 
+        value: JSON.stringify({
+          status: "PROCESSING",
+          step: "Deleting existing data",
+          startedAt: new Date().toISOString()
+        })
+      }
+    });
 
     // Clear existing data for the current year only (run in a single transaction)
     await prisma.$transaction([
@@ -145,29 +175,78 @@ async function processDataInBackground(
       })
     ]);
 
-    // Process competencies
-    const newCompetencies = await prisma.competency.createMany({
-      data: competencies.map(comp => ({
-        competencyType: comp.type,
-        competencyName: comp.name,
-        weightage: comp.weightage,
-        description: comp.description,
-        year: comp.year
-      })),
-      skipDuplicates: true
+    // Update status to indicate adding competencies
+    await prisma.systemStatus.update({
+      where: { key: `excel_import_${currentYear}` },
+      data: { 
+        value: JSON.stringify({
+          status: "PROCESSING",
+          step: "Adding competencies",
+          startedAt: new Date().toISOString()
+        })
+      }
     });
 
-    // Process goals
-    const newGoals = await prisma.goal.createMany({
-      data: goals.map(goal => ({
-        goalCategory: goal.category,
-        goalName: goal.name,
-        goalTitle: goal.title,
-        metric: goal.metric,
-        weightage: goal.weightage,
-        year: goal.year
-      })),
-      skipDuplicates: true
+    // Process competencies in smaller batches
+    let competencyCount = 0;
+    const competencyBatches = chunk(competencies, BATCH_SIZE);
+    for (const batch of competencyBatches) {
+      const result = await prisma.competency.createMany({
+        data: batch.map(comp => ({
+          competencyType: comp.type,
+          competencyName: comp.name,
+          weightage: comp.weightage,
+          description: comp.description,
+          year: comp.year
+        })),
+        skipDuplicates: true
+      });
+      competencyCount += result.count;
+    }
+
+    // Update status to indicate adding goals
+    await prisma.systemStatus.update({
+      where: { key: `excel_import_${currentYear}` },
+      data: { 
+        value: JSON.stringify({
+          status: "PROCESSING",
+          step: "Adding goals",
+          competenciesAdded: competencyCount,
+          startedAt: new Date().toISOString()
+        })
+      }
+    });
+
+    // Process goals in smaller batches
+    let goalCount = 0;
+    const goalBatches = chunk(goals, BATCH_SIZE);
+    for (const batch of goalBatches) {
+      const result = await prisma.goal.createMany({
+        data: batch.map(goal => ({
+          goalCategory: goal.category,
+          goalName: goal.name,
+          goalTitle: goal.title,
+          metric: goal.metric,
+          weightage: goal.weightage,
+          year: goal.year
+        })),
+        skipDuplicates: true
+      });
+      goalCount += result.count;
+    }
+
+    // Update status to indicate fetching inserted data
+    await prisma.systemStatus.update({
+      where: { key: `excel_import_${currentYear}` },
+      data: { 
+        value: JSON.stringify({
+          status: "PROCESSING",
+          step: "Fetching inserted data",
+          competenciesAdded: competencyCount,
+          goalsAdded: goalCount,
+          startedAt: new Date().toISOString()
+        })
+      }
     });
 
     // Fetch newly inserted competencies
@@ -182,78 +261,110 @@ async function processDataInBackground(
       select: { id: true }
     });
 
-    // Fetch users in smaller batches to avoid memory issues
-    let userOffset = 0;
-    const userLimit = 10;
-    let hasMoreUsers = true;
+    // Update status to indicate creating user mappings
+    await prisma.systemStatus.update({
+      where: { key: `excel_import_${currentYear}` },
+      data: { 
+        value: JSON.stringify({
+          status: "PROCESSING",
+          step: "Creating user mappings",
+          competenciesAdded: competencyCount,
+          goalsAdded: goalCount,
+          startedAt: new Date().toISOString()
+        })
+      }
+    });
+
+    // Fetch all users at once to reduce database calls
+    const allUsers = await prisma.user.findMany({
+      select: { id: true }
+    });
     
-    while (hasMoreUsers) {
-      // Get a batch of users
-      const userBatch = await prisma.user.findMany({
-        skip: userOffset,
-        take: userLimit,
-        select: { id: true }
+    // Process user competencies in smaller batches
+    let userCompetencyCount = 0;
+    for (const comp of insertedCompetencies) {
+      const userCompetencyData = allUsers.map(user => ({
+        userId: user.id,
+        competencyId: comp.id,
+        employeeRating: 0,
+        managerRating: 0,
+        adminRating: 0
+      }));
+      
+      // Insert in smaller chunks
+      const userCompetencyChunks = chunk(userCompetencyData, BATCH_SIZE);
+      for (const batch of userCompetencyChunks) {
+        const result = await prisma.userCompetency.createMany({ 
+          data: batch,
+          skipDuplicates: true
+        });
+        userCompetencyCount += result.count;
+      }
+      
+      // Update progress periodically
+      await prisma.systemStatus.update({
+        where: { key: `excel_import_${currentYear}` },
+        data: { 
+          value: JSON.stringify({
+            status: "PROCESSING",
+            step: "Creating user competency mappings",
+            competenciesAdded: competencyCount,
+            goalsAdded: goalCount,
+            userCompetencyMappingsAdded: userCompetencyCount,
+            startedAt: new Date().toISOString()
+          })
+        }
       });
-      
-      if (userBatch.length === 0) {
-        hasMoreUsers = false;
-        continue;
-      }
-      
-      userOffset += userBatch.length;
-      
-      // Process competencies for this batch of users
-      for (const comp of insertedCompetencies) {
-        const userCompetencyData = userBatch.map(user => ({
-          userId: user.id,
-          competencyId: comp.id,
-          employeeRating: 0,
-          managerRating: 0,
-          adminRating: 0
-        }));
-        
-        // Insert in smaller chunks
-        const userCompetencyChunks = chunk(userCompetencyData, BATCH_SIZE);
-        for (const batch of userCompetencyChunks) {
-          await prisma.userCompetency.createMany({ data: batch });
-        }
-      }
-      
-      // Process goals for this batch of users
-      for (const goal of insertedGoals) {
-        const userGoalData = userBatch.map(user => ({
-          userId: user.id,
-          goalId: goal.id,
-          employeeRating: 0,
-          managerRating: 0,
-          adminRating: 0
-        }));
-        
-        // Insert in smaller chunks
-        const userGoalChunks = chunk(userGoalData, BATCH_SIZE);
-        for (const batch of userGoalChunks) {
-          await prisma.userGoal.createMany({ data: batch });
-        }
-      }
     }
     
-    // Update a status record in the database to track completion
-    await prisma.systemStatus.upsert({
+    // Process user goals in smaller batches
+    let userGoalCount = 0;
+    for (const goal of insertedGoals) {
+      const userGoalData = allUsers.map(user => ({
+        userId: user.id,
+        goalId: goal.id,
+        employeeRating: 0,
+        managerRating: 0,
+        adminRating: 0
+      }));
+      
+      // Insert in smaller chunks
+      const userGoalChunks = chunk(userGoalData, BATCH_SIZE);
+      for (const batch of userGoalChunks) {
+        const result = await prisma.userGoal.createMany({ 
+          data: batch,
+          skipDuplicates: true 
+        });
+        userGoalCount += result.count;
+      }
+      
+      // Update progress periodically
+      await prisma.systemStatus.update({
+        where: { key: `excel_import_${currentYear}` },
+        data: { 
+          value: JSON.stringify({
+            status: "PROCESSING",
+            step: "Creating user goal mappings",
+            competenciesAdded: competencyCount,
+            goalsAdded: goalCount,
+            userCompetencyMappingsAdded: userCompetencyCount,
+            userGoalMappingsAdded: userGoalCount,
+            startedAt: new Date().toISOString()
+          })
+        }
+      });
+    }
+    
+    // Update status record to indicate completion
+    await prisma.systemStatus.update({
       where: { key: `excel_import_${currentYear}` },
-      update: { 
+      data: { 
         value: JSON.stringify({
           status: "COMPLETED",
-          competenciesAdded: newCompetencies.count,
-          goalsAdded: newGoals.count,
-          completedAt: new Date().toISOString()
-        })
-      },
-      create: {
-        key: `excel_import_${currentYear}`,
-        value: JSON.stringify({
-          status: "COMPLETED",
-          competenciesAdded: newCompetencies.count,
-          goalsAdded: newGoals.count,
+          competenciesAdded: competencyCount,
+          goalsAdded: goalCount,
+          userCompetencyMappingsAdded: userCompetencyCount,
+          userGoalMappingsAdded: userGoalCount,
           completedAt: new Date().toISOString()
         })
       }
