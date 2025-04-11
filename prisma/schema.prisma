@@ -204,3 +204,7 @@ model OrganizationChart {
   subordinates   OrganizationChart[] @relation("ManagerToEmployee")
 }
 
+model SystemStatus {
+  key   String @id
+  value String @db.Text
+}

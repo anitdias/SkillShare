@@ -5,6 +5,9 @@ import * as XLSX from "xlsx";
 import prisma from "@/lib/prisma";
 import { chunk } from "lodash";
 
+// Set smaller batch sizes to avoid timeouts
+const BATCH_SIZE = 25;
+
 export async function POST(req: NextRequest) {
   try {
     // Check authentication
@@ -82,9 +85,34 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Fetch all users
-    const users = await prisma.user.findMany({ select: { id: true } });
+    // Start a background job to process the data
+    // This allows us to return a response quickly while processing continues
+    processDataInBackground(currentYear, competencies, goals)
+      .catch(err => console.error("Background processing error:", err));
 
+    // Return an immediate response
+    return NextResponse.json({
+      success: true,
+      message: `Processing started for year ${currentYear}. This may take a few minutes to complete.`,
+      status: "PROCESSING"
+    });
+
+  } catch (error) {
+    console.error("Error processing upload:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "An unknown error occurred" },
+      { status: 500 }
+    );
+  }
+}
+
+// Separate function to handle the background processing
+async function processDataInBackground(
+  currentYear: number,
+  competencies: { type: string; name: string; weightage: number; description: string; year: number }[],
+  goals: { category: string; name: string; title: string; metric: string; weightage: number; year: number }[]
+) {
+  try {
     // Find competency IDs for the current year to delete
     const competencyIdsForYear = await prisma.competency.findMany({
       where: { year: currentYear },
@@ -117,11 +145,6 @@ export async function POST(req: NextRequest) {
       })
     ]);
 
-    let competenciesAdded = 0;
-    let userCompetenciesAdded = 0;
-    let goalsAdded = 0;
-    let userGoalsAdded = 0;
-
     // Process competencies
     const newCompetencies = await prisma.competency.createMany({
       data: competencies.map(comp => ({
@@ -133,8 +156,6 @@ export async function POST(req: NextRequest) {
       })),
       skipDuplicates: true
     });
-
-    competenciesAdded = newCompetencies.count;
 
     // Process goals
     const newGoals = await prisma.goal.createMany({
@@ -149,78 +170,116 @@ export async function POST(req: NextRequest) {
       skipDuplicates: true
     });
 
-    goalsAdded = newGoals.count;
-
     // Fetch newly inserted competencies
     const insertedCompetencies = await prisma.competency.findMany({
       where: { year: currentYear },
-      select: { id: true, competencyName: true }
+      select: { id: true }
     });
 
     // Fetch newly inserted goals
     const insertedGoals = await prisma.goal.findMany({
       where: { year: currentYear },
-      select: { id: true, goalName: true }
+      select: { id: true }
     });
 
-    // Create user-competency mappings in chunks
-    const batchSize = 50;
-    const userCompetencyData = [];
-
-    for (const comp of insertedCompetencies) {
-      for (const user of users) {
-        userCompetencyData.push({
+    // Fetch users in smaller batches to avoid memory issues
+    let userOffset = 0;
+    const userLimit = 10;
+    let hasMoreUsers = true;
+    
+    while (hasMoreUsers) {
+      // Get a batch of users
+      const userBatch = await prisma.user.findMany({
+        skip: userOffset,
+        take: userLimit,
+        select: { id: true }
+      });
+      
+      if (userBatch.length === 0) {
+        hasMoreUsers = false;
+        continue;
+      }
+      
+      userOffset += userBatch.length;
+      
+      // Process competencies for this batch of users
+      for (const comp of insertedCompetencies) {
+        const userCompetencyData = userBatch.map(user => ({
           userId: user.id,
           competencyId: comp.id,
           employeeRating: 0,
           managerRating: 0,
           adminRating: 0
-        });
+        }));
+        
+        // Insert in smaller chunks
+        const userCompetencyChunks = chunk(userCompetencyData, BATCH_SIZE);
+        for (const batch of userCompetencyChunks) {
+          await prisma.userCompetency.createMany({ data: batch });
+        }
       }
-    }
-
-    const userCompetencyChunks = chunk(userCompetencyData, batchSize);
-    for (const batch of userCompetencyChunks) {
-      await prisma.userCompetency.createMany({ data: batch });
-      userCompetenciesAdded += batch.length;
-    }
-    
-    // Create user-goal mappings in chunks
-    const userGoalData = [];
-
-    for (const goal of insertedGoals) {
-      for (const user of users) {
-        userGoalData.push({
+      
+      // Process goals for this batch of users
+      for (const goal of insertedGoals) {
+        const userGoalData = userBatch.map(user => ({
           userId: user.id,
           goalId: goal.id,
           employeeRating: 0,
           managerRating: 0,
           adminRating: 0
-        });
+        }));
+        
+        // Insert in smaller chunks
+        const userGoalChunks = chunk(userGoalData, BATCH_SIZE);
+        for (const batch of userGoalChunks) {
+          await prisma.userGoal.createMany({ data: batch });
+        }
       }
     }
-
-    const userGoalChunks = chunk(userGoalData, batchSize);
-    for (const batch of userGoalChunks) {
-      await prisma.userGoal.createMany({ data: batch });
-      userGoalsAdded += batch.length;
-    }
-
-    return NextResponse.json({
-      success: true,
-      competenciesAdded,
-      userCompetenciesAdded,
-      goalsAdded,
-      userGoalsAdded,
-      year: currentYear,
-      message: `Goals and Competencies for year ${currentYear} processed successfully`
+    
+    // Update a status record in the database to track completion
+    await prisma.systemStatus.upsert({
+      where: { key: `excel_import_${currentYear}` },
+      update: { 
+        value: JSON.stringify({
+          status: "COMPLETED",
+          competenciesAdded: newCompetencies.count,
+          goalsAdded: newGoals.count,
+          completedAt: new Date().toISOString()
+        })
+      },
+      create: {
+        key: `excel_import_${currentYear}`,
+        value: JSON.stringify({
+          status: "COMPLETED",
+          competenciesAdded: newCompetencies.count,
+          goalsAdded: newGoals.count,
+          completedAt: new Date().toISOString()
+        })
+      }
     });
-
+    
   } catch (error) {
-    console.error("Error processing upload:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "An unknown error occurred" },
-      { status: 500 }
-    );
+    console.error("Background processing error:", error);
+    
+    // Update status to error
+    await prisma.systemStatus.upsert({
+      where: { key: `excel_import_${currentYear}` },
+      update: { 
+        value: JSON.stringify({
+          status: "ERROR",
+          error: error instanceof Error ? error.message : "Unknown error",
+          errorAt: new Date().toISOString()
+        })
+      },
+      create: {
+        key: `excel_import_${currentYear}`,
+        value: JSON.stringify({
+          status: "ERROR",
+          error: error instanceof Error ? error.message : "Unknown error",
+          errorAt: new Date().toISOString()
+        })
+      }
+    });
   }
 }
