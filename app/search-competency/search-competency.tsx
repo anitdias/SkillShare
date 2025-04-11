@@ -104,6 +104,8 @@ export default function SearchCompetencyPage() {
     goalCategory: '' // Default category
   });
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -450,6 +452,41 @@ export default function SearchCompetencyPage() {
       console.error('Error adding goal:', error);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteGoal = async () => {
+    if (!expandedGoal) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/add-goal`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          goalId: expandedGoal,
+          userId: searchedUserId
+        }),
+      });
+  
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete goal');
+      }
+  
+      // Remove the deleted goal from the state
+      setGroupedGoals(prev => prev.filter(g => g.id !== expandedGoal));
+      setExpandedGoal(null);
+      setShowDeleteConfirm(false);
+      
+      // Show success message or toast here if needed
+    } catch (err) {
+      console.error('Error deleting goal:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete goal');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1113,6 +1150,22 @@ export default function SearchCompetencyPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      {/* Delete button - only visible to admins and managers */}
+                      {(session?.user?.role === "admin" || session?.user?.role === "manager") && !isEditing && (
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-full p-2 transition-all duration-200"
+                          title="Delete goal"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                          </svg>
+                        </motion.button>
+                      )}
                       {(session?.user?.role === "admin" || session?.user?.role === "manager") && !isEditing && (
                         <motion.button 
                           whileHover={{ scale: 1.1 }}
@@ -1140,7 +1193,7 @@ export default function SearchCompetencyPage() {
                       </motion.button>
                     </div>
                   </div>
-                </div>
+                  </div>
                 
                 {/* Content area */}
                 <div className="p-5 overflow-y-auto">
@@ -1391,7 +1444,56 @@ export default function SearchCompetencyPage() {
           );
       })()}
 
-{showAddGoalModal && (
+      {showDeleteConfirm && expandedGoal && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[60] backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-gradient-to-br from-gray-900 to-black backdrop-blur-lg rounded-xl border border-red-700/30 p-6 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-400">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Delete Goal</h3>
+              <p className="text-gray-300 mb-2">
+                Are you sure you want to delete this goal? This action cannot be undone.
+              </p>
+              <p className="text-red-400 text-sm">
+                Note: This will only remove the goal from this users profile.
+              </p>
+            </div>
+            
+            <div className="flex justify-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-5 py-2.5 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleDeleteGoal}
+                disabled={isDeleting}
+                className="px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Goal'}
+              </motion.button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {showAddGoalModal && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}

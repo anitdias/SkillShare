@@ -123,3 +123,97 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const session: Session | null = await getServerSession(authOptions);
+
+    // Check if user is authenticated
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Extract data from request body
+    const { goalId, userId } = await request.json();
+
+    if (!goalId || !userId) {
+      return NextResponse.json(
+        { message: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Check if user has admin role or is a manager
+    if (session.user.role === "admin") {
+      // Admin can proceed without additional checks
+    } 
+    // For managers, check if they are the direct manager of the employee
+    else if (session.user.role === "manager") {
+      // Get the employee's organization info
+      const employeeOrgInfo = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { 
+          employeeNo: true 
+        }
+      });
+
+      if (!employeeOrgInfo?.employeeNo) {
+        return NextResponse.json(
+          { message: "Employee organization information not found" },
+          { status: 404 }
+        );
+      }
+
+      // Get the manager's employee number directly from session
+      if (!session.user.employeeNo) {
+        return NextResponse.json(
+          { message: "Manager organization information not found" },
+          { status: 404 }
+        );
+      }
+
+      // Check if the manager is the direct manager of the employee
+      const isDirectManager = await prisma.organizationChart.findFirst({
+        where: {
+          employeeNo: employeeOrgInfo.employeeNo,
+          managerNo: session.user.employeeNo
+        }
+      });
+
+      if (!isDirectManager) {
+        return NextResponse.json(
+          { message: "Forbidden: You can only add goals for your direct subordinates" },
+          { status: 403 }
+        );
+      }
+    } else {
+      // Not admin or manager
+      return NextResponse.json(
+        { message: "Forbidden: Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    // Delete the UserGoal mapping (not the goal itself)
+    await prisma.userGoal.deleteMany({
+      where: {
+        userId: userId,
+        goalId: goalId
+      }
+    });
+
+    return NextResponse.json(
+      { message: "Goal removed successfully" },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error deleting goal:", error);
+    return NextResponse.json(
+      { message: "Failed to delete goal" },
+      { status: 500 }
+    );
+  }
+}
