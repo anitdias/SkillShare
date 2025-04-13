@@ -105,7 +105,11 @@ export async function POST(req: NextRequest) {
     // This avoids the localhost connection issue on Vercel
     try {
       // Call the first step directly
-      const processUrl = new URL(`${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/upload-excel/process-step`);
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+      
+      const processUrl = new URL('/api/upload-excel/process-step', baseUrl);
       processUrl.searchParams.append("jobId", job.id);
       processUrl.searchParams.append("step", "1");
       
