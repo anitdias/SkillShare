@@ -104,25 +104,34 @@ export async function POST(req: NextRequest) {
     // Instead of using fetch, directly process the first step
     // This avoids the localhost connection issue on Vercel
     try {
-      // Call the first step directly
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}` 
-        : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+      // Use a fixed base URL for production or fallback to localhost for development
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://skill-share-six.vercel.app' 
+        : 'http://localhost:3000';
       
-      const processUrl = new URL('/api/upload-excel/process-step', baseUrl);
-      processUrl.searchParams.append("jobId", job.id);
-      processUrl.searchParams.append("step", "1");
+      console.log(`Using base URL: ${baseUrl} to trigger process-step`);
       
-      // Make the request with absolute URL
-      fetch(processUrl.toString(), {
+      // Construct the full URL
+      const processUrl = `${baseUrl}/api/upload-excel/process-step?jobId=${job.id}&step=1`;
+      
+      console.log(`Triggering first step at: ${processUrl}`);
+      
+      // Make the request with simplified configuration
+      const response = await fetch(processUrl, {
         method: 'POST',
         headers: {
-          // Add host header to ensure proper routing
-          'Host': processUrl.host
-        }
-      }).catch(err => console.error("Error triggering first step:", err));
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        console.error(`Error response from process-step: ${response.status}`);
+      } else {
+        console.log('Successfully triggered first processing step');
+      }
     } catch (err) {
-      console.error("Error setting up processing:", err);
+      console.error("Error triggering first step:", err);
       // Continue anyway - the user can manually trigger processing if needed
     }
 
