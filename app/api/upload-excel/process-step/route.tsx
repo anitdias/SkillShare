@@ -113,25 +113,30 @@ export async function POST(req: NextRequest) {
       
       // Check if there are more steps to process
       if (step < 5) {
-        // Trigger the next step asynchronously
+        // Trigger the next step asynchronously using a more reliable approach
         try {
-          // Create a proper URL object with the appropriate base URL for Vercel
-          const processUrl = new URL('/api/upload-excel/process-step', 
-            process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-            process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+          // Use a background task approach that's more reliable in serverless environments
+          const baseUrl = process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}` 
+            : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
           
-          // Add query parameters
+          const processUrl = new URL('/api/upload-excel/process-step', baseUrl);
           processUrl.searchParams.append("jobId", jobId);
           processUrl.searchParams.append("step", (step + 1).toString());
           
-          // Make the request with absolute URL
+          // Use fetch with no-cors mode and appropriate headers
           fetch(processUrl.toString(), {
             method: 'POST',
             headers: {
-              // Add host header to ensure proper routing
-              'Host': processUrl.host
-            }
+              'Host': processUrl.host,
+              'User-Agent': 'SkillShare-Internal-Process',
+              'Content-Type': 'application/json'
+            },
+            // Don't wait for the response
+            cache: 'no-store'
           }).catch(err => console.error(`Error triggering step ${step + 1}:`, err));
+          
+          console.log(`Triggered next step ${step + 1} at: ${processUrl.toString()}`);
         } catch (err) {
           console.error(`Error setting up step ${step + 1}:`, err);
           // Continue anyway - the job status will show progress
