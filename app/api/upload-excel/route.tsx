@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import * as XLSX from "xlsx";
 import prisma from "@/lib/prisma";
-import { chunk } from "lodash";
 
 export async function POST(req: NextRequest) {
   try {
@@ -82,138 +81,35 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Fetch all users
-    const users = await prisma.user.findMany({ select: { id: true } });
-
-    // Find competency IDs for the current year to delete
-    const competencyIdsForYear = await prisma.competency.findMany({
-      where: { year: currentYear },
-      select: { id: true }
-    });
-    
-    const competencyIds = competencyIdsForYear.map(comp => comp.id);
-    
-    // Find goal IDs for the current year to delete
-    const goalIdsForYear = await prisma.goal.findMany({
-      where: { year: currentYear },
-      select: { id: true }
-    });
-    
-    const goalIds = goalIdsForYear.map(goal => goal.id);
-
-    // Clear existing data for the current year only (run in a single transaction)
-    await prisma.$transaction([
-      prisma.userCompetency.deleteMany({
-        where: { competencyId: { in: competencyIds } }
-      }),
-      prisma.competency.deleteMany({
-        where: { year: currentYear }
-      }),
-      prisma.userGoal.deleteMany({
-        where: { goalId: { in: goalIds } }
-      }),
-      prisma.goal.deleteMany({
-        where: { year: currentYear }
-      })
-    ]);
-
-    let competenciesAdded = 0;
-    let userCompetenciesAdded = 0;
-    let goalsAdded = 0;
-    let userGoalsAdded = 0;
-
-    // Process competencies
-    const newCompetencies = await prisma.competency.createMany({
-      data: competencies.map(comp => ({
-        competencyType: comp.type,
-        competencyName: comp.name,
-        weightage: comp.weightage,
-        description: comp.description,
-        year: comp.year
-      })),
-      skipDuplicates: true
-    });
-
-    competenciesAdded = newCompetencies.count;
-
-    // Process goals
-    const newGoals = await prisma.goal.createMany({
-      data: goals.map(goal => ({
-        goalCategory: goal.category,
-        goalName: goal.name,
-        goalTitle: goal.title,
-        metric: goal.metric,
-        weightage: goal.weightage,
-        year: goal.year
-      })),
-      skipDuplicates: true
-    });
-
-    goalsAdded = newGoals.count;
-
-    // Fetch newly inserted competencies
-    const insertedCompetencies = await prisma.competency.findMany({
-      where: { year: currentYear },
-      select: { id: true, competencyName: true }
-    });
-
-    // Fetch newly inserted goals
-    const insertedGoals = await prisma.goal.findMany({
-      where: { year: currentYear },
-      select: { id: true, goalName: true }
-    });
-
-    // Create user-competency mappings in chunks
-    const batchSize = 50;
-    const userCompetencyData = [];
-
-    for (const comp of insertedCompetencies) {
-      for (const user of users) {
-        userCompetencyData.push({
-          userId: user.id,
-          competencyId: comp.id,
-          employeeRating: 0,
-          managerRating: 0,
-          adminRating: 0
-        });
+    // Create a job record to track progress
+    const job = await prisma.importJob.create({
+      data: {
+        userId: session.user.id,
+        year: currentYear,
+        status: "PENDING",
+        data: {
+          goals,
+          competencies
+        },
+        steps: {
+          clearData: "PENDING",
+          importCompetencies: "PENDING",
+          importGoals: "PENDING",
+          mapCompetencies: "PENDING",
+          mapGoals: "PENDING"
+        }
       }
-    }
+    });
 
-    const userCompetencyChunks = chunk(userCompetencyData, batchSize);
-    for (const batch of userCompetencyChunks) {
-      await prisma.userCompetency.createMany({ data: batch });
-      userCompetenciesAdded += batch.length;
-    }
-    
-    // Create user-goal mappings in chunks
-    const userGoalData = [];
-
-    for (const goal of insertedGoals) {
-      for (const user of users) {
-        userGoalData.push({
-          userId: user.id,
-          goalId: goal.id,
-          employeeRating: 0,
-          managerRating: 0,
-          adminRating: 0
-        });
-      }
-    }
-
-    const userGoalChunks = chunk(userGoalData, batchSize);
-    for (const batch of userGoalChunks) {
-      await prisma.userGoal.createMany({ data: batch });
-      userGoalsAdded += batch.length;
-    }
+    // Trigger the first processing step asynchronously
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/upload-excel/process-step?jobId=${job.id}&step=1`, {
+      method: 'POST',
+    }).catch(err => console.error("Error triggering first step:", err));
 
     return NextResponse.json({
       success: true,
-      competenciesAdded,
-      userCompetenciesAdded,
-      goalsAdded,
-      userGoalsAdded,
-      year: currentYear,
-      message: `Goals and Competencies for year ${currentYear} processed successfully`
+      jobId: job.id,
+      message: `Excel file processed. Data import has started for year ${currentYear}. You can check the status using the job ID.`
     });
 
   } catch (error) {

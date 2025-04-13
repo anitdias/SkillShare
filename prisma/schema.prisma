@@ -39,6 +39,7 @@ model User {
   roadmap           Roadmap[]
   userCompetencies  UserCompetency[]
   userGoals         UserGoal[]
+  importJob         ImportJob[]
   employeeNo        String?  @unique
   organizationInfo  OrganizationChart? @relation("UserToOrgChart", fields: [employeeNo], references: [employeeNo])
 }
@@ -168,6 +169,7 @@ model Goal {
   goalName     String
   goalTitle    String
   metric       String
+  original     String?
   weightage    Int
   year         Int     @default(2024)
   createdAt    DateTime @default(now())
@@ -204,7 +206,26 @@ model OrganizationChart {
   subordinates   OrganizationChart[] @relation("ManagerToEmployee")
 }
 
-model SystemStatus {
-  key   String @id
-  value String @db.Text
+// Add this to your schema.prisma file
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ImportJob {
+  id          String    @id @default(uuid())
+  userId      String    
+  year        Int
+  status      JobStatus @default(PENDING)
+  data        Json      // Stores the extracted data
+  steps       Json      // Tracks the status of each processing step
+  error       String?   // Stores any error message
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+  
+  user        User      @relation(fields: [userId], references: [id])
 }
