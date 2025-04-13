@@ -114,9 +114,28 @@ export async function POST(req: NextRequest) {
       // Check if there are more steps to process
       if (step < 5) {
         // Trigger the next step asynchronously
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/upload-excel/process-step?jobId=${jobId}&step=${step + 1}`, {
-          method: 'POST',
-        }).catch(err => console.error(`Error triggering step ${step + 1}:`, err));
+        try {
+          // Create a proper URL object with the appropriate base URL for Vercel
+          const processUrl = new URL('/api/upload-excel/process-step', 
+            process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+            process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+          
+          // Add query parameters
+          processUrl.searchParams.append("jobId", jobId);
+          processUrl.searchParams.append("step", (step + 1).toString());
+          
+          // Make the request with absolute URL
+          fetch(processUrl.toString(), {
+            method: 'POST',
+            headers: {
+              // Add host header to ensure proper routing
+              'Host': processUrl.host
+            }
+          }).catch(err => console.error(`Error triggering step ${step + 1}:`, err));
+        } catch (err) {
+          console.error(`Error setting up step ${step + 1}:`, err);
+          // Continue anyway - the job status will show progress
+        }
         
         return NextResponse.json({ success: true, message: `Step ${step} completed, processing step ${step + 1}` });
       } else {

