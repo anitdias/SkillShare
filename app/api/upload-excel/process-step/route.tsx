@@ -113,30 +113,30 @@ export async function POST(req: NextRequest) {
       
       // Check if there are more steps to process
       if (step < 5) {
-        // Trigger the next step asynchronously using a more reliable approach
+        // Trigger the next step asynchronously with the approach that worked for step 1
         try {
-          // Use a background task approach that's more reliable in serverless environments
-          const baseUrl = process.env.VERCEL_URL 
-            ? `https://${process.env.VERCEL_URL}` 
-            : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+          // Use a fixed base URL for production or fallback to localhost for development
+          const baseUrl = process.env.NODE_ENV === 'production' 
+            ? 'https://skill-share-six.vercel.app' 
+            : 'http://localhost:3000';
           
-          const processUrl = new URL('/api/upload-excel/process-step', baseUrl);
-          processUrl.searchParams.append("jobId", jobId);
-          processUrl.searchParams.append("step", (step + 1).toString());
+          console.log(`Using base URL: ${baseUrl} to trigger next step`);
           
-          // Use fetch with no-cors mode and appropriate headers
-          fetch(processUrl.toString(), {
+          // Construct the full URL directly
+          const processUrl = `${baseUrl}/api/upload-excel/process-step?jobId=${jobId}&step=${step + 1}`;
+          
+          console.log(`Triggering next step ${step + 1} at: ${processUrl}`);
+          
+          // Make the request with simplified configuration
+          fetch(processUrl, {
             method: 'POST',
             headers: {
-              'Host': processUrl.host,
-              'User-Agent': 'SkillShare-Internal-Process',
               'Content-Type': 'application/json'
             },
-            // Don't wait for the response
             cache: 'no-store'
           }).catch(err => console.error(`Error triggering step ${step + 1}:`, err));
           
-          console.log(`Triggered next step ${step + 1} at: ${processUrl.toString()}`);
+          console.log(`Request sent for step ${step + 1}`);
         } catch (err) {
           console.error(`Error setting up step ${step + 1}:`, err);
           // Continue anyway - the job status will show progress
