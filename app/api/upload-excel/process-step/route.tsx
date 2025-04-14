@@ -283,60 +283,42 @@ async function mapCompetenciesToUsers(year: number) {
 }
 
 // Step 5: Map goals to users
-// Step 5: Map goals to users
 async function mapGoalsToUsers(year: number) {
-  try {
-    console.log(`[Step 5] Starting goal mapping for year ${year}`);
-    
-    // Fetch all users with employee numbers
-    const users = await prisma.user.findMany({ 
-      where: { employeeNo: { not: null } },
-      select: { id: true } 
-    });
-    
-    // Fetch newly inserted goals
-    const insertedGoals = await prisma.goal.findMany({
-      where: { year },
-      select: { id: true }
-    });
-    
-    console.log(`[Step 5] Found ${users.length} users and ${insertedGoals.length} goals`);
-    
-    // Use smaller batch size in production
-    const batchSize = process.env.NODE_ENV === 'production' ? 25 : 100;
-    console.log(`[Step 5] Using batch size: ${batchSize}`);
-    
-    // Process one goal at a time to reduce memory usage
-    let processedCount = 0;
-    
-    for (const goal of insertedGoals) {
-      // Create mappings for this specific goal only
-      const goalMappings = users.map(user => ({
+  // Fetch all users with employee numbers
+  const users = await prisma.user.findMany({ 
+    where: { employeeNo: { not: null } },
+    select: { id: true } 
+  });
+  
+  // Fetch newly inserted goals
+  const insertedGoals = await prisma.goal.findMany({
+    where: { year },
+    select: { id: true }
+  });
+  
+  console.log(`Found ${users.length} users and ${insertedGoals.length} goals`);
+  
+  // Create user-goal mappings in chunks
+  const batchSize = 100;
+  const userGoalData = [];
+  
+  for (const goal of insertedGoals) {
+    for (const user of users) {
+      userGoalData.push({
         userId: user.id,
         goalId: goal.id,
         employeeRating: 0,
         managerRating: 0,
         adminRating: 0
-      }));
-      
-      // Process in smaller chunks
-      const chunks = chunk(goalMappings, batchSize);
-      
-      for (const batch of chunks) {
-        await prisma.userGoal.createMany({ 
-          data: batch,
-          skipDuplicates: true
-        });
-        processedCount += batch.length;
-      }
-      
-      console.log(`[Step 5] Processed goal ${goal.id}: ${processedCount} mappings created so far`);
+      });
     }
-    
-    console.log(`[Step 5] Completed: ${processedCount} total user-goal mappings created`);
-    return true;
-  } catch (error) {
-    console.error(`[Step 5] Error in mapGoalsToUsers:`, error);
-    throw error; // Re-throw to mark the step as failed
+  }
+  
+  const userGoalChunks = chunk(userGoalData, batchSize);
+  for (const batch of userGoalChunks) {
+    await prisma.userGoal.createMany({ 
+      data: batch,
+      skipDuplicates: true
+    });
   }
 }

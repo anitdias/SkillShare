@@ -137,7 +137,7 @@ export default function UploadExcel() {
         setStatusMessage(error instanceof Error ? error.message : "Failed to check job status");
         setIsUploading(false);
       }
-    }, 3000);
+    }, 10000);
     
     setPollingInterval(interval);
   };
