@@ -75,6 +75,51 @@ export async function POST(request: Request) {
       },
     });
 
+    // Map competencies and goals to the new user
+    // Get all competencies to map to the user
+    const competencies = await prisma.competency.findMany();
+    
+    // Create UserCompetency entries for each competency
+    if (competencies.length > 0) {
+      const userCompetencyData = competencies.map(competency => ({
+        userId: user.id,
+        competencyId: competency.id,
+        employeeRating: 0,
+        managerRating: 0,
+        adminRating: 0
+      }));
+      
+      await prisma.userCompetency.createMany({
+        data: userCompetencyData,
+        skipDuplicates: true, // Skip if already exists
+      });
+    }
+    
+    // Get all original goals to map to the user
+    const originalGoals = await prisma.goal.findMany({
+      where: {
+        original: {
+          not: null
+        }
+      }
+    });
+    
+    // Create UserGoal entries for each original goal
+    if (originalGoals.length > 0) {
+      const userGoalData = originalGoals.map(goal => ({
+        userId: user.id,
+        goalId: goal.id,
+        employeeRating: 0,
+        managerRating: 0,
+        adminRating: 0
+      }));
+      
+      await prisma.userGoal.createMany({
+        data: userGoalData,
+        skipDuplicates: true, // Skip if already exists
+      });
+    }
+
     // Remove sensitive data before sending response
     const userWithoutPassword = _.omit(user, ['passwordHash']);
 
