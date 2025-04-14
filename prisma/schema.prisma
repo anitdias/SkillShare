@@ -71,7 +71,7 @@ model UserSkill {
   description        String?
   validatedByManager Boolean  @default(false)
   
-  user       User          @relation(fields: [userId], references: [id])
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill      Skill         @relation(fields: [skillId], references: [id])
   category   SkillCategory @relation(fields: [categoryId], references: [id])
 

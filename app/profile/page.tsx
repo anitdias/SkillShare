@@ -106,14 +106,15 @@ export default function ProfilePage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
-      if (!session?.user?.employeeNo) {
+      // Allow admin users to bypass employee number verification
+      if (!session?.user?.employeeNo && session?.user?.role !== 'admin') {
         router.push('/verify-employee');
         return;
       }
       fetchUserData();
       setSessionKey(prev => prev + 1);
     }
-  }, [status, router, session?.user?.name, session?.user?.description, session?.user?.designation, session?.user?.employeeNo]);
+  }, [status, router, session?.user?.name, session?.user?.description, session?.user?.designation, session?.user?.employeeNo, session?.user?.role]);
 
   const testimonials = useMemo(() => [
     {
@@ -759,6 +760,11 @@ export default function ProfilePage() {
                   <DropdownItem key="org-chart" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/org-chart')
                   }}>Org-Chart</DropdownItem>
+                  {session?.user?.role === "admin" ? (
+                    <DropdownItem key="verify-empno" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                      router.push('/verify-employee')
+                    }}>Verify EmployeeNo</DropdownItem>
+                  ) : null}
                   <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
                     Log Out
                   </DropdownItem>

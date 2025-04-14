@@ -8,6 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { LucideIdCard, AlertCircle } from 'lucide-react';
 import { SparklesCore } from '@/components/ui/sparkles';
+import {
+  DropdownItem,
+  DropdownTrigger,
+  Dropdown,
+  DropdownMenu,
+  Avatar,
+} from "@heroui/react";
+import { signOut } from "next-auth/react";
 
 export default function EmployeeVerification() {
   const { data: session, status, update } = useSession();;
@@ -15,6 +23,8 @@ export default function EmployeeVerification() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  const fulltext = "<SkillShare/>";
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -69,6 +79,36 @@ export default function EmployeeVerification() {
 
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4 relative">
+      <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+        {/* Left Section - Sidebar & Title */}
+        <div className="flex items-center gap-3">
+          {/* Title */}
+          <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+            {fulltext}
+          </h1>
+        </div>
+
+        {/* Right Section - Search Bar & Sign Out */}
+        <div className="flex items-center gap-4">
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <Avatar
+                isBordered
+                as="button"
+                className="transition-transform hover:scale-105"
+                color="secondary"
+                size="md"
+                src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+              />
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
+              <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
+                Log Out
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+      </nav>
       <div className="absolute inset-0 w-full h-full">
         <SparklesCore
           id="tsparticles"
