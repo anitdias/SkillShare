@@ -856,9 +856,12 @@ export default function ProfilePage() {
                         </div>
                         
                         <div>
-                          <div className="flex justify-between items-center mb-2">
+                        <div className="flex justify-between items-center mb-2">
                             <label className="text-sm font-medium text-gray-300">Proficiency Level</label>
-                            <span className="text-sm text-blue-400 font-medium">{newSkill.level}</span>
+                            <span className="text-sm text-blue-400 font-medium">
+                              {newSkill.level === "Level 1" ? "Beginner" : 
+                               newSkill.level === "Level 2" ? "Intermediate" : "Advanced"}
+                            </span>
                           </div>
                           
                           <div className="relative">
@@ -884,7 +887,7 @@ export default function ProfilePage() {
                                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                                 }`}
                               >
-                                1
+                                B
                               </motion.button>
                               <motion.button
                                 whileTap={{ scale: 0.95 }}
@@ -895,7 +898,7 @@ export default function ProfilePage() {
                                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                                 }`}
                               >
-                                2
+                                I
                               </motion.button>
                               <motion.button
                                 whileTap={{ scale: 0.95 }}
@@ -906,7 +909,7 @@ export default function ProfilePage() {
                                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                                 }`}
                               >
-                                3
+                                A
                               </motion.button>
                             </div>
                           </div>
@@ -1157,9 +1160,12 @@ export default function ProfilePage() {
                             name: wishlistItem.skillName, 
                             categoryId: wishlistItem.categoryId,
                             description: editingWishlistDescription
+                          }).then(() => {
+                            // Update skills counter to trigger re-render
+                            setSkillsUpdateCounter(prev => prev + 1);
+                            handleDeleteWishlist(expandedWishlist);
+                            setExpandedWishlist(null);
                           });
-                          handleDeleteWishlist(expandedWishlist);
-                          setExpandedWishlist(null);
                         }
                       }}
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium py-2 rounded-lg shadow-lg transition-all duration-200"
@@ -1229,7 +1235,10 @@ export default function ProfilePage() {
                   <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-sm font-medium text-gray-300">Proficiency Level</label>
-                      <span className="text-sm text-blue-400 font-medium">{editingSkill.level}</span>
+                      <span className="text-sm text-blue-400 font-medium">
+                        {editingSkill.level === "Level 1" ? "Beginner" : 
+                         editingSkill.level === "Level 2" ? "Intermediate" : "Advanced"}
+                      </span>
                     </div>
                     
                     <div className="relative">
@@ -1255,7 +1264,7 @@ export default function ProfilePage() {
                               : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                           }`}
                         >
-                          1
+                          B
                         </motion.button>
                         <motion.button
                           whileTap={{ scale: 0.95 }}
@@ -1266,7 +1275,7 @@ export default function ProfilePage() {
                               : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                           }`}
                         >
-                          2
+                          I
                         </motion.button>
                         <motion.button
                           whileTap={{ scale: 0.95 }}
@@ -1277,7 +1286,7 @@ export default function ProfilePage() {
                               : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                           }`}
                         >
-                          3
+                          A
                         </motion.button>
                       </div>
                     </div>

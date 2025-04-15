@@ -306,23 +306,24 @@ export default function CompetencyPage() {
 
       {/* Competency Sections */}
       <div className="max-w-7xl mx-auto">
-        {competencyTypes.map((type) => (
-          <motion.div
-            key={type}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full bg-neutral-950 overflow-hidden relative h-auto rounded-2xl p-8"
-          >
-            {/* Section Header */}
-            <div className="flex flex-col mb-6">
-              <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">
-                Competency Category
-              </span>
-              <h2 className="text-2xl md:text-3xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-mono font-bold">
-                {type}
-              </h2>
-            </div>
+        {userCompetencies.length > 0 ? (
+          competencyTypes.map((type) => (
+            <motion.div
+              key={type}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="w-full bg-neutral-950 overflow-hidden relative h-auto rounded-2xl p-8"
+            >
+              {/* Section Header */}
+              <div className="flex flex-col mb-6">
+                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">
+                  Competency Category
+                </span>
+                <h2 className="text-2xl md:text-3xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-mono font-bold">
+                  {type}
+                </h2>
+              </div>
 
             
             <div 
@@ -396,8 +397,21 @@ export default function CompetencyPage() {
                 />
               </motion.div>
             </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 mb-4 rounded-full bg-blue-500/10 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-medium text-white mb-2">No Competencies Available</h3>
+            <p className="text-gray-400 max-w-md">
+              There are no competencies set for the selected year. Please select a different year or contact your administrator.
+            </p>
+          </div>
+        )}
       </div>
       {expandedCompetency && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">

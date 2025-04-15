@@ -191,8 +191,11 @@ export default function ProfilePage() {
                                   </div>
                                   <div className="flex justify-between items-end">
                                     <div className="flex flex-col">
-                                      <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
-                                        {skill.level || "Level 1"}
+                                    <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                        {skill.level === "Level 1" ? "Beginner" : 
+                                         skill.level === "Level 2" ? "Intermediate" : 
+                                         skill.level === "Level 3" ? "Advanced" : 
+                                         skill.level || "Beginner"}
                                       </span>
                                       {skill.validatedByManager && (
                                         <span className="text-xs text-emerald-400 mt-1 flex items-center">
@@ -393,13 +396,16 @@ export default function ProfilePage() {
             <div className="p-6">
               {/* Skill Level Badge */}
               <div className="flex items-center gap-2 mb-6">
-                <motion.span 
+              <motion.span 
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
                   className="text-sm text-purple-300 px-4 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 shadow-lg shadow-purple-500/5"
                 >
-                  {searchedUserSkills.find(skill => skill.id === expandedSkill)?.level || "Level 1"}
+                  {searchedUserSkills.find(skill => skill.id === expandedSkill)?.level === "Level 1" ? "Beginner" :
+                   searchedUserSkills.find(skill => skill.id === expandedSkill)?.level === "Level 2" ? "Intermediate" :
+                   searchedUserSkills.find(skill => skill.id === expandedSkill)?.level === "Level 3" ? "Advanced" :
+                   searchedUserSkills.find(skill => skill.id === expandedSkill)?.level || "Beginner"}
                 </motion.span>
                 
                 {searchedUserSkills.find(skill => skill.id === expandedSkill)?.validatedByManager && (
