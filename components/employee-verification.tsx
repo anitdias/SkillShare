@@ -83,7 +83,10 @@ export default function EmployeeVerification() {
         {/* Left Section - Sidebar & Title */}
         <div className="flex items-center gap-3">
           {/* Title */}
-          <h1 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap">
+          <h1 
+            className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap cursor-pointer"
+            onClick={() => router.push('/profile')}
+          >
             {fulltext}
           </h1>
         </div>
