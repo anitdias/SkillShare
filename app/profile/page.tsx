@@ -88,6 +88,7 @@ export default function ProfilePage() {
   const [skillsUpdateCounter, setSkillsUpdateCounter] = useState(0);
   const [wishlistUpdateCounter, setWishlistUpdateCounter] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const imageSrc = session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
   
 
@@ -115,6 +116,40 @@ export default function ProfilePage() {
       setSessionKey(prev => prev + 1);
     }
   }, [status, router, session?.user?.name, session?.user?.description, session?.user?.designation, session?.user?.employeeNo, session?.user?.role]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300); // 300ms delay
+  
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (debouncedQuery === '') {
+        setSearchUsers([]);
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: debouncedQuery }),
+        });
+  
+        if (res.ok) {
+          const users = await res.json();
+          setSearchUsers(users);
+        }
+      } catch (error) {
+        console.error('Error while fetching user data:', error);
+      }
+    };
+  
+    fetchUsers();
+  }, [debouncedQuery]);
 
   const testimonials = useMemo(() => [
     {
@@ -332,27 +367,9 @@ export default function ProfilePage() {
         }
       }
 
-      const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        
-        const inputValue = e.target.value;
-        setQuery(inputValue);
-        if(inputValue!== ''){
-        try{
-          const res = await fetch('/api/search',{
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: inputValue }),
-          })
-  
-          if(res.ok){
-              const users = await res.json()
-              setSearchUsers(users);
-          }
-      }
-      catch(error){
-          console.error('Error while fetching user data:', error);
-      }
-    }
+      const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value);
+        // Remove the API call from here
       };
     
       const fetchRecommendation = async () => {

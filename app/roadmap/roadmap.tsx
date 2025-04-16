@@ -50,6 +50,7 @@ export default function RoadmapForm() {
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const fulltext = "<Skill Share/>";
 
@@ -77,6 +78,40 @@ export default function RoadmapForm() {
       getRoadmap();
     }
   }, [skillName, level]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300); // 300ms delay
+  
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (debouncedQuery === '') {
+        setSearchUsers([]);
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: debouncedQuery }),
+        });
+  
+        if (res.ok) {
+          const users = await res.json();
+          setSearchUsers(users);
+        }
+      } catch (error) {
+        console.error('Error while fetching user data:', error);
+      }
+    };
+  
+    fetchUsers();
+  }, [debouncedQuery]);
 
   const getRoadmap = async () => {
     setIsLoading(true);
@@ -158,26 +193,9 @@ export default function RoadmapForm() {
     }
   };
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setQuery(inputValue);
-    if(inputValue!== ''){
-      try{
-        const res = await fetch('/api/search',{
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: inputValue }),
-        })
-
-        if(res.ok){
-          const users = await res.json()
-          setSearchUsers(users);
-        }
-      }
-      catch(error){
-        console.error('Error while fetching user data:', error);
-      }
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    // Remove the API call from here
   };
 
   // Transform roadmap steps to timeline format

@@ -60,6 +60,7 @@ export default function GoalsPage() {
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const fulltext = "<Skill Share/>";
 
@@ -89,6 +90,41 @@ export default function GoalsPage() {
       }
     }
   }, [expandedGoal, userGoals]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300); // 300ms delay
+  
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (debouncedQuery === '') {
+        setSearchUsers([]);
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: debouncedQuery }),
+        });
+  
+        if (res.ok) {
+          const users = await res.json();
+          setSearchUsers(users);
+        }
+      } catch (error) {
+        console.error('Error while fetching user data:', error);
+      }
+    };
+  
+    fetchUsers();
+  }, [debouncedQuery]);
+  
 
   const fetchAvailableYears = async () => {
     try {
@@ -129,26 +165,9 @@ export default function GoalsPage() {
     fetchGoals(newYear); // Fetch goals for the selected year
   };
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setQuery(inputValue);
-    if(inputValue !== ''){
-      try{
-        const res = await fetch('/api/search',{
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: inputValue }),
-        })
-
-        if(res.ok){
-          const users = await res.json()
-          setSearchUsers(users);
-        }
-      }
-      catch(error){
-        console.error('Error while fetching user data:', error);
-      }
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    // Remove the API call from here
   };
 
   const Icon = () => {

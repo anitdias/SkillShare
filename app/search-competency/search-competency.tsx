@@ -106,6 +106,7 @@ export default function SearchCompetencyPage() {
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -154,6 +155,40 @@ export default function SearchCompetencyPage() {
       }
     }
   }, [expandedGoal, groupedGoals]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300); // 300ms delay
+  
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (debouncedQuery === '') {
+        setSearchUsers([]);
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: debouncedQuery }),
+        });
+  
+        if (res.ok) {
+          const users = await res.json();
+          setSearchUsers(users);
+        }
+      } catch (error) {
+        console.error('Error while fetching user data:', error);
+      }
+    };
+  
+    fetchUsers();
+  }, [debouncedQuery]);
 
   const Icon = () => {
     return (
@@ -224,25 +259,9 @@ export default function SearchCompetencyPage() {
     }
   }, [searchedUserId, fetchUserData, session?.user?.role, selectedYear]);
   
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setQuery(inputValue);
-    if (inputValue !== '') {
-      try {
-        const res = await fetch('/api/search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: inputValue }),
-        });
-
-        if (res.ok) {
-          const users = await res.json();
-          setSearchUsers(users);
-        }
-      } catch (error) {
-        console.error('Error while fetching user data:', error);
-      }
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    // Remove the API call from here
   };
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

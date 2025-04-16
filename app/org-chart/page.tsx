@@ -156,6 +156,7 @@ export default function OrganizationPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<{employeeNo: string, name: string} | null>(null);
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const fulltext = "<SkillShare/>";
 
@@ -204,26 +205,44 @@ export default function OrganizationPage() {
     }
   }, [status]);
 
-  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    setQuery(inputValue);
-    if(inputValue!== ''){
-      try{
-        const res = await fetch('/api/search',{
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300); // 300ms delay
+  
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (debouncedQuery === '') {
+        setSearchUsers([]);
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: inputValue }),
-        })
-
-        if(res.ok){
-          const users = await res.json()
+          body: JSON.stringify({ query: debouncedQuery }),
+        });
+  
+        if (res.ok) {
+          const users = await res.json();
           setSearchUsers(users);
         }
-      }
-      catch(error){
+      } catch (error) {
         console.error('Error while fetching user data:', error);
       }
-    }
+    };
+  
+    fetchUsers();
+  }, [debouncedQuery]);
+
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+    // Remove the API call from here
   };
   
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
