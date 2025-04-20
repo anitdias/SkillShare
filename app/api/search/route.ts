@@ -27,7 +27,8 @@ export async function POST(request: Request) {
             },
             select: {
                 id: true,   // Include only the `id`
-                name: true, // Include only the `name`
+                name: true,
+                image: true, // Include only the `name`
               },
           });
 

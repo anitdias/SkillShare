@@ -640,16 +640,16 @@ export default function SearchCompetencyPage() {
                 Profile
               </Button>
               <Button 
-                onClick={() => router.push('/competency')}
+                onClick={() => {
+                  if (session?.user?.role === 'admin') {
+                    router.push(`/admin-feedback?userid=${searchedUserId}&username=${searchedUsername}`);
+                  } else {
+                    router.push(`/reviewer-feedback?userid=${searchedUserId}&username=${searchedUsername}`);
+                  }
+                }}
                 className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
               >
-                My Competencies
-              </Button>
-              <Button 
-                onClick={() => router.push('/goals')}
-                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
-              >
-                My Goals
+                360° Feedback
               </Button>
             </div>
     

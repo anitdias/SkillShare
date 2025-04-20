@@ -229,3 +229,83 @@ model ImportJob {
   
   user        User      @relation(fields: [userId], references: [id])
 }
+
+// Add these models to your existing schema.prisma file
+
+// Feedback Questions Table
+model FeedbackQuestion {
+  id            String          @id @default(uuid())
+  formName      String
+  questionNumber Int
+  questionText  String
+  questionType  String          // "Multiple Choice" or "Check Boxes"
+  choice1       String?
+  choice2       String?
+  choice3       String?
+  choice4       String?
+  year          Int
+  original      Boolean?         
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  userFeedback  UserFeedback[]
+}
+
+// User Feedback Mapping Table
+model UserFeedback {
+  id                String            @id @default(uuid())
+  targetUserId      String            // User receiving feedback
+  feedbackQuestionId String
+  feedbackQuestion  FeedbackQuestion  @relation(fields: [feedbackQuestionId], references: [id], onDelete: Cascade)
+  formName          String
+  year              Int
+  status            String            @default("PENDING") // PENDING, COMPLETED
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  feedbackReviewers FeedbackReviewer[]
+
+  @@index([targetUserId])
+  @@index([feedbackQuestionId])
+}
+
+// Feedback Reviewers Table
+model FeedbackReviewer {
+  id             String             @id @default(uuid())
+  reviewerName   String?          // Added field to store reviewer name
+  userFeedbackId String
+  userFeedback   UserFeedback       @relation(fields: [userFeedbackId], references: [id], onDelete: Cascade)
+  reviewerId     String             // User giving feedback
+  status         String             @default("PENDING") // PENDING, COMPLETED
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  feedbackResponses FeedbackResponse[]
+  
+  @@index([userFeedbackId])
+  @@index([reviewerId])
+}
+
+// Feedback Responses Table
+model FeedbackResponse {
+  id                 String           @id @default(uuid())
+  feedbackReviewerId String
+  feedbackReviewer   FeedbackReviewer @relation(fields: [feedbackReviewerId], references: [id], onDelete: Cascade)
+  responseText       String
+  responseValue      Int?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  
+  @@index([feedbackReviewerId])
+}
+
+// Notification Table
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String   // User receiving the notification
+  title       String
+  message     String
+  type        String   // "FEEDBACK_REQUEST", "GENERAL", etc.
+  isRead      Boolean  @default(false)
+  relatedId   String?  // ID of related entity (e.g., userFeedbackId)
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+}
