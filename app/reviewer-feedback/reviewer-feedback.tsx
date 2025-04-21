@@ -137,28 +137,28 @@ export default function ReviewerFeedbackPage() {
       
       setFeedbackAssignments(filteredAssignments);
       
-      // Fetch all responses for these assignments
-      const reviewerIds = filteredAssignments.map((assignment: FeedbackReviewer) => assignment.id);
-      const responses = await Promise.all(
-        reviewerIds.map(async (id: string) => {
-          const res = await fetch(`/api/feedback-response?feedbackReviewerId=${id}`);
-          if (res.ok) {
-            return await res.json();
-          }
-          return [];
-        })
-      );
+      // Fetch all responses for these assignments using the batch API
+      const reviewerIds = feedbackAssignments.map(assignment => assignment.id);
       
-      // Flatten and convert to record
+      // Build query string with multiple IDs
+      const queryString = reviewerIds.map((id: string) => `feedbackReviewerId=${id}`).join('&');
+      
+      const res = await fetch(`/api/feedback-response-batch?${queryString}`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch feedback responses');
+      }
+      
+      const responseData = await res.json();
+      
+      // Convert array of responses to record by feedbackReviewerId
       const responsesRecord: Record<string, FeedbackResponse> = {};
-      responses.flat().forEach((response: FeedbackResponse) => {
+      responseData.forEach((response: FeedbackResponse) => {
         if (response && response.feedbackReviewerId) {
           responsesRecord[response.feedbackReviewerId] = response;
         }
       });
       
       setFeedbackResponses(responsesRecord);
-      
       setIsAuthorized(true);
     } catch (error) {
       console.error('Error checking authorization:', error);
@@ -212,52 +212,34 @@ export default function ReviewerFeedbackPage() {
     }
   };
 
-  // Fetch responses for a specific feedback reviewer assignment
-  // const fetchFeedbackResponses = async (feedbackReviewerId: string) => {
-  //   try {
-  //     const response = await fetch(`/api/feedback-response?feedbackReviewerId=${feedbackReviewerId}`);
-      
-  //     if (!response.ok) {
-  //       throw new Error('Failed to fetch feedback responses');
-  //     }
-      
-  //     const responses = await response.json();
-      
-  //     // Convert array to record for easier access
-  //     const responsesRecord: Record<string, FeedbackResponse> = {};
-  //     responses.forEach((response: FeedbackResponse) => {
-  //       responsesRecord[response.feedbackReviewerId] = response;
-  //     });
-      
-  //     setFeedbackResponses(responsesRecord);
-  //   } catch (error) {
-  //     console.error('Error fetching feedback responses:', error);
-  //   }
-  // };
-
   const fetchAllFeedbackResponses = async () => {
     try {
       if (feedbackAssignments.length === 0) return;
       
+      // Get all reviewer IDs
       const reviewerIds = feedbackAssignments.map(assignment => assignment.id);
-      const responses = await Promise.all(
-        reviewerIds.map(async (id) => {
-          const res = await fetch(`/api/feedback-response?feedbackReviewerId=${id}`);
-          if (res.ok) {
-            return await res.json();
-          }
-          return [];
-        })
-      );
       
-      // Flatten and convert to record
+      // Build query string with multiple IDs
+      const queryString = reviewerIds.map(id => `feedbackReviewerId=${id}`).join('&');
+      
+      // Make a single API call to the new batch endpoint
+      const res = await fetch(`/api/feedback-response-batch?${queryString}`);
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch feedback responses');
+      }
+      
+      const responseData = await res.json();
+      
+      // Convert array of responses to record by feedbackReviewerId
       const responsesRecord: Record<string, FeedbackResponse> = {};
-      responses.flat().forEach((response: FeedbackResponse) => {
+      responseData.forEach((response: FeedbackResponse) => {
         if (response && response.feedbackReviewerId) {
           responsesRecord[response.feedbackReviewerId] = response;
         }
       });
       
+      console.log('Fetched responses:', responsesRecord);
       setFeedbackResponses(responsesRecord);
     } catch (error) {
       console.error('Error fetching all feedback responses:', error);
@@ -310,58 +292,6 @@ export default function ReviewerFeedbackPage() {
       }
     }));
   };
-
-  // Submit feedback response
-  // const submitFeedbackResponse = async (feedbackReviewerId: string) => {
-  //   try {
-  //     setIsSubmitting(true);
-  //     setSubmitSuccess(false);
-  //     setSubmitError('');
-      
-  //     const response = await fetch('/api/feedback-response', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         feedbackReviewerId,
-  //         responseText: feedbackResponses[feedbackReviewerId]?.responseText || '',
-  //       }),
-  //     });
-      
-  //     if (!response.ok) {
-  //       throw new Error('Failed to submit feedback response');
-  //     }
-      
-  //     Update reviewer status to completed
-  //     await fetch('/api/feedback-reviewers/status', {
-  //       method: 'PATCH',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         id: feedbackReviewerId,
-  //         status: 'COMPLETED',
-  //       }),
-  //     });
-      
-  //     setSubmitSuccess(true);
-      
-  //     // Refresh assignments
-  //     fetchReviewerAssignments();
-  //   } catch (error) {
-  //     console.error('Error submitting feedback response:', error);
-  //     setSubmitError('Failed to submit feedback. Please try again.');
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
-
-  // Select an assignment to review
-  // const selectAssignment = (assignment: FeedbackReviewer) => {
-  //   setCurrentAssignment(assignment);
-  //   fetchFeedbackResponses(assignment.id);
-  // };
 
   const handleCheckboxToggle = (feedbackReviewerId: string, choice: string) => {
     setFeedbackResponses(prev => {
@@ -432,36 +362,30 @@ export default function ReviewerFeedbackPage() {
         assignment => assignment.status !== 'COMPLETED'
       );
       
-      // Submit each response
-      const promises = pendingAssignments.map(async (assignment) => {
-        const response = feedbackResponses[assignment.id];
-        if (!response || !response.responseText) return;
-        
-        await fetch('/api/feedback-response', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+      // Prepare responses for batch submission with status updates
+      const responsesToSubmit = pendingAssignments
+        .map(assignment => {
+          const response = feedbackResponses[assignment.id];
+          if (!response || !response.responseText) return null;
+          
+          return {
             feedbackReviewerId: assignment.id,
             responseText: response.responseText,
-          }),
-        });
-        
-        // Update reviewer status to completed
-        // await fetch('/api/feedback-reviewers/status', {
-        //   method: 'PATCH',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //   },
-        //   body: JSON.stringify({
-        //     id: assignment.id,
-        //     status: 'COMPLETED',
-        //   }),
-        // });
-      });
+            status: 'COMPLETED' // Include status update in the same request
+          };
+        })
+        .filter(Boolean); // Remove null entries
       
-      await Promise.all(promises);
+      // Submit all responses in a single request
+      await fetch('/api/feedback-response-batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          responses: responsesToSubmit
+        }),
+      });
       
       setSubmitSuccess(true);
       
@@ -475,8 +399,12 @@ export default function ReviewerFeedbackPage() {
         })
       );
       
-      // Refresh assignments
-      fetchReviewerAssignments();
+      // Refresh the responses
+      if (searchedUserId) {
+        await checkAuthorization(searchedUserId);
+      } else {
+        await fetchAllFeedbackResponses();
+      }
     } catch (error) {
       console.error('Error submitting feedback responses:', error);
       setSubmitError('Failed to submit feedback. Please try again.');

@@ -27,59 +27,84 @@ export async function DELETE(request: NextRequest) {
     
     console.log(`Clearing feedback data for user ${userId} and year ${year}`);
     
-    // Find all user feedback entries for this user and year
-    const userFeedbackEntries = await prisma.userFeedback.findMany({
+    // Get all userFeedback IDs first (more efficient than loading all data)
+    const userFeedbackIds = await prisma.userFeedback.findMany({
       where: {
         targetUserId: userId,
         year: year,
       },
-      include: {
-        feedbackReviewers: {
-          include: {
-            feedbackResponses: true,
-          },
-        },
+      select: {
+        id: true,
       },
     });
     
-    console.log(`Found ${userFeedbackEntries.length} feedback entries to delete`);
+    const feedbackIds = userFeedbackIds.map(feedback => feedback.id);
+    console.log(`Found ${feedbackIds.length} feedback entries to delete`);
     
-    // Delete all related data in the correct order to maintain referential integrity
-    for (const feedback of userFeedbackEntries) {
-      // Delete all feedback responses for each reviewer
-      for (const reviewer of feedback.feedbackReviewers) {
-        if (reviewer.feedbackResponses && reviewer.feedbackResponses.length > 0) {
-          await prisma.feedbackResponse.deleteMany({
-            where: {
-              feedbackReviewerId: reviewer.id,
-            },
-          });
-        }
-      }
-      
-      // Delete all feedback reviewers
-      if (feedback.feedbackReviewers && feedback.feedbackReviewers.length > 0) {
-        await prisma.feedbackReviewer.deleteMany({
+    if (feedbackIds.length === 0) {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'No feedback entries found to delete' 
+      });
+    }
+    
+    // Get all reviewer IDs for these feedback entries
+    const reviewerIds = await prisma.feedbackReviewer.findMany({
+      where: {
+        userFeedbackId: {
+          in: feedbackIds,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+    
+    const reviewerIdList = reviewerIds.map(reviewer => reviewer.id);
+    
+    // Use a transaction to ensure all operations succeed or fail together
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Delete all feedback responses in a single batch operation
+      if (reviewerIdList.length > 0) {
+        await tx.feedbackResponse.deleteMany({
           where: {
-            userFeedbackId: feedback.id,
+            feedbackReviewerId: {
+              in: reviewerIdList,
+            },
           },
         });
       }
-    }
-    
-    // Delete all user feedback entries
-    const deletedCount = await prisma.userFeedback.deleteMany({
-      where: {
-        targetUserId: userId,
-        year: year,
-      },
+      
+      // 2. Delete all feedback reviewers in a single batch operation
+      if (feedbackIds.length > 0) {
+        await tx.feedbackReviewer.deleteMany({
+          where: {
+            userFeedbackId: {
+              in: feedbackIds,
+            },
+          },
+        });
+      }
+      
+      // 3. Delete all user feedback entries in a single batch operation
+      const deletedCount = await tx.userFeedback.deleteMany({
+        where: {
+          id: {
+            in: feedbackIds,
+          },
+        },
+      });
+      
+      return deletedCount;
+    }, {
+      timeout: 30000, // 30 second timeout for the transaction
     });
     
-    console.log(`Deleted ${deletedCount.count} user feedback entries`);
+    console.log(`Deleted ${result.count} user feedback entries`);
     
     return NextResponse.json({ 
       success: true, 
-      message: `Deleted ${deletedCount.count} feedback entries and all associated data` 
+      message: `Deleted ${result.count} feedback entries and all associated data` 
     });
     
   } catch (error) {
