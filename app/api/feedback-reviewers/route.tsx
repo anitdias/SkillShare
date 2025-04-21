@@ -50,121 +50,109 @@ export async function GET(request: NextRequest) {
 
 // POST: Assign reviewers to user feedback
 export async function POST(request: NextRequest) {
-    try {
-      const session = await getServerSession(authOptions);
-      
-      if (!session || session.user.role !== 'admin') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      
-      const data = await request.json();
-      
-      // Validate required fields
-      if (!data.userId || !data.reviewerIds || !Array.isArray(data.reviewerIds) || data.reviewerIds.length === 0) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-      }
-      
-      // Get user feedback for this user and year
-      const userFeedback = await prisma.userFeedback.findMany({
-        where: {
-          targetUserId: data.userId,
-          year: data.year || new Date().getFullYear(),
-        },
-      });
-      
-      if (userFeedback.length === 0) {
-        return NextResponse.json({ error: 'No feedback found for this user' }, { status: 404 });
-      }
-      
-      // Create reviewer assignments
-      const reviewerPromises = [];
-      
-      for (const feedback of userFeedback) {
-        for (const reviewerId of data.reviewerIds) {
-          // Check if this reviewer is already assigned to this feedback
-          const existingReviewer = await prisma.feedbackReviewer.findFirst({
-            where: {
-              userFeedbackId: feedback.id,
-              reviewerId,
-            },
-          });
-          
-          // Get reviewer name from the data or fetch from database
-          let reviewerName = data.reviewerNames?.[reviewerId];
-          
-          // If name not provided, try to fetch from database
-          if (!reviewerName) {
-            const reviewer = await prisma.user.findUnique({
-              where: { id: reviewerId },
-              select: { name: true }
-            });
-            reviewerName = reviewer?.name || 'Unknown Reviewer';
-          }
-          
-          if (!existingReviewer) {
-            reviewerPromises.push(
-              prisma.feedbackReviewer.create({
-                data: {
-                  userFeedbackId: feedback.id,
-                  reviewerId,
-                  reviewerName, // Store the reviewer name
-                  status: 'PENDING',
-                },
-              })
-            );
-          }
-        }
-      }
-      
-      const results = await Promise.all(reviewerPromises);
-      
-      return NextResponse.json(results);
-    } catch (error) {
-      console.error('Error assigning reviewers:', error);
-      return NextResponse.json({ error: 'Failed to assign reviewers' }, { status: 500 });
-    }
-  }
-
-// PATCH: Update reviewer status
-export async function PATCH(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session) {
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const data = await request.json();
     
     // Validate required fields
-    if (!data.id || !data.status) {
+    if (!data.userId || !data.reviewerIds || !Array.isArray(data.reviewerIds) || data.reviewerIds.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
     
-    // Get the reviewer
-    const reviewer = await prisma.feedbackReviewer.findUnique({
-      where: { id: data.id },
+    // Get user feedback for this user and year
+    const userFeedback = await prisma.userFeedback.findMany({
+      where: {
+        targetUserId: data.userId,
+        year: data.year || new Date().getFullYear(),
+      },
     });
     
-    if (!reviewer) {
-      return NextResponse.json({ error: 'Reviewer not found' }, { status: 404 });
+    if (userFeedback.length === 0) {
+      return NextResponse.json({ error: 'No feedback found for this user' }, { status: 404 });
     }
     
-    // Only allow admins or the assigned reviewer to update
-    if (session.user.role !== 'admin' && reviewer.reviewerId !== session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // Update the reviewer
-    const updatedReviewer = await prisma.feedbackReviewer.update({
-      where: { id: data.id },
-      data: { status: data.status },
+    // Fetch all existing reviewer assignments in a single query
+    const existingReviewers = await prisma.feedbackReviewer.findMany({
+      where: {
+        userFeedbackId: {
+          in: userFeedback.map(feedback => feedback.id)
+        },
+        reviewerId: {
+          in: data.reviewerIds
+        }
+      },
+      select: {
+        userFeedbackId: true,
+        reviewerId: true
+      }
     });
     
-    return NextResponse.json(updatedReviewer);
+    // Create a lookup map for quick checking
+    const existingAssignments = new Map();
+    existingReviewers.forEach(reviewer => {
+      const key = `${reviewer.userFeedbackId}_${reviewer.reviewerId}`;
+      existingAssignments.set(key, true);
+    });
+    
+    // Fetch missing reviewer names in a single query if needed
+    const reviewerNamesMap = data.reviewerNames ? { ...data.reviewerNames } : {};
+    const missingReviewerIds = data.reviewerIds.filter((id: string) => !reviewerNamesMap[id]);
+    
+    if (missingReviewerIds.length > 0) {
+      const reviewers = await prisma.user.findMany({
+        where: {
+          id: {
+            in: missingReviewerIds
+          }
+        },
+        select: {
+          id: true,
+          name: true
+        }
+      });
+      
+      reviewers.forEach(reviewer => {
+        reviewerNamesMap[reviewer.id] = reviewer.name || 'Unknown Reviewer';
+      });
+    }
+    
+    // Prepare batch create data
+    const createData = [];
+    
+    for (const feedback of userFeedback) {
+      for (const reviewerId of data.reviewerIds) {
+        const key = `${feedback.id}_${reviewerId}`;
+        
+        // Skip if already assigned
+        if (!existingAssignments.has(key)) {
+          createData.push({
+            userFeedbackId: feedback.id,
+            reviewerId,
+            reviewerName: reviewerNamesMap[reviewerId] || 'Unknown Reviewer',
+            status: 'PENDING',
+          });
+        }
+      }
+    }
+    
+    // Batch create all new assignments in a single operation
+    
+    if (createData.length > 0) {
+      await prisma.feedbackReviewer.createMany({
+        data: createData,
+        skipDuplicates: true,
+      });
+    }
+    
+    return NextResponse.json({ count: createData.length });
   } catch (error) {
-    console.error('Error updating reviewer:', error);
-    return NextResponse.json({ error: 'Failed to update reviewer' }, { status: 500 });
+    console.error('Error assigning reviewers:', error);
+    return NextResponse.json({ error: 'Failed to assign reviewers' }, { status: 500 });
   }
 }
 
