@@ -139,7 +139,7 @@ export default function ReviewerFeedbackPage() {
       
       // Fetch all responses for these assignments using the batch API
       // Use filteredAssignments directly instead of feedbackAssignments which hasn't been updated yet
-      const reviewerIds = filteredAssignments.map(assignment => assignment.id);
+      const reviewerIds = filteredAssignments.map((assignment: FeedbackReviewer) => assignment.id);
       
       if (reviewerIds.length > 0) {
         // Build query string with multiple IDs
