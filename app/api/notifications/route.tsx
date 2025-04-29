@@ -112,29 +112,3 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
-// DELETE: Delete a notification (admin only)
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const data = await request.json();
-    
-    if (!data.id) {
-      return NextResponse.json({ error: 'Notification ID is required' }, { status: 400 });
-    }
-    
-    // Delete the notification
-    await prisma.notification.delete({
-      where: { id: data.id },
-    });
-    
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting notification:', error);
-    return NextResponse.json({ error: 'Failed to delete notification' }, { status: 500 });
-  }
-}

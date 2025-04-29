@@ -138,27 +138,31 @@ export default function ReviewerFeedbackPage() {
       setFeedbackAssignments(filteredAssignments);
       
       // Fetch all responses for these assignments using the batch API
-      const reviewerIds = feedbackAssignments.map(assignment => assignment.id);
+      // Use filteredAssignments directly instead of feedbackAssignments which hasn't been updated yet
+      const reviewerIds = filteredAssignments.map(assignment => assignment.id);
       
-      // Build query string with multiple IDs
-      const queryString = reviewerIds.map((id: string) => `feedbackReviewerId=${id}`).join('&');
-      
-      const res = await fetch(`/api/feedback-response-batch?${queryString}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch feedback responses');
+      if (reviewerIds.length > 0) {
+        // Build query string with multiple IDs
+        const queryString = reviewerIds.map((id: string) => `feedbackReviewerId=${id}`).join('&');
+        
+        const res = await fetch(`/api/feedback-response-batch?${queryString}`);
+        if (!res.ok) {
+          throw new Error('Failed to fetch feedback responses');
+        }
+        
+        const responseData = await res.json();
+        
+        // Convert array of responses to record by feedbackReviewerId
+        const responsesRecord: Record<string, FeedbackResponse> = {};
+        responseData.forEach((response: FeedbackResponse) => {
+          if (response && response.feedbackReviewerId) {
+            responsesRecord[response.feedbackReviewerId] = response;
+          }
+        });
+        
+        setFeedbackResponses(responsesRecord);
       }
       
-      const responseData = await res.json();
-      
-      // Convert array of responses to record by feedbackReviewerId
-      const responsesRecord: Record<string, FeedbackResponse> = {};
-      responseData.forEach((response: FeedbackResponse) => {
-        if (response && response.feedbackReviewerId) {
-          responsesRecord[response.feedbackReviewerId] = response;
-        }
-      });
-      
-      setFeedbackResponses(responsesRecord);
       setIsAuthorized(true);
     } catch (error) {
       console.error('Error checking authorization:', error);
@@ -214,10 +218,12 @@ export default function ReviewerFeedbackPage() {
 
   const fetchAllFeedbackResponses = async () => {
     try {
-      if (feedbackAssignments.length === 0) return;
+      if (!feedbackAssignments || feedbackAssignments.length === 0) return;
       
       // Get all reviewer IDs
       const reviewerIds = feedbackAssignments.map(assignment => assignment.id);
+      
+      if (reviewerIds.length === 0) return;
       
       // Build query string with multiple IDs
       const queryString = reviewerIds.map(id => `feedbackReviewerId=${id}`).join('&');
@@ -250,7 +256,13 @@ export default function ReviewerFeedbackPage() {
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newYear = parseInt(e.target.value);
     setSelectedYear(newYear);
-    fetchReviewerAssignments();
+    
+    // Refresh data based on current view
+    if (searchedUserId) {
+      checkAuthorization(searchedUserId);
+    } else {
+      fetchReviewerAssignments();
+    }
   };
 
   // Handle input change for search

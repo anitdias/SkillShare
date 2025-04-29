@@ -705,6 +705,10 @@ export default function ProfilePage() {
                     router.push('/goals');}}>
                     Goals
                   </DropdownItem>
+                  <DropdownItem key="feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/feedback-assignments');}}>
+                    360° Feedback
+                  </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
             </div>
