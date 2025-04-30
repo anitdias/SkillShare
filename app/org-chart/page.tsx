@@ -19,13 +19,14 @@ import {
   import { Button } from "@/components/ui/button";
   import { Input } from "@/components/ui/input";
 
-interface OrgNode {
-  id: string;
-  employeeNo: string;
-  name: string;
-  position?: string;
-  children: OrgNode[];
-}
+  interface OrgNode {
+    id: string;
+    employeeNo: string;
+    name: string;
+    position?: string;
+    userId?: string | null; // Add userId to the interface
+    children: OrgNode[];
+  }
 
 interface SearchUser {
   id: string;
@@ -43,17 +44,39 @@ interface AddEmployeeFormData {
 const TreeNode = ({ 
   node, 
   level = 0,
-  onDeleteClick
+  onDeleteClick,
+  parentNode = null
 }: { 
   node: OrgNode; 
   level?: number;
   onDeleteClick?: (employee: {employeeNo: string, name: string}) => void;
+  parentNode?: OrgNode | null;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = node.children && node.children.length > 0;
   const bgOpacity = Math.max(0.2, 1 - level * 0.15); // Gradually reduce opacity for deeper levels
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
+  const isManager = session?.user?.role === "manager";
+  const router = useRouter();
+
+  const handleFeedbackClick = () => {
+    if (node.userId) {
+      router.push(`/admin-feedback?userid=${node.userId}&username=${node.name}`);
+    }
+  };
+
+  const isUserManagerOfThisNode = parentNode && 
+    session?.user?.employeeNo && 
+    parentNode.employeeNo === session.user.employeeNo;
+
+    const showFeedbackButton = node.userId && (
+      // Admin can see feedback button on all nodes except those with admin role
+      // and except on themselves
+      (isAdmin && node.position !== "admin" && node.userId !== session?.user?.id) || 
+      // Manager can see feedback button ONLY on their direct subordinates
+      (isManager && isUserManagerOfThisNode)
+    );
 
   return (
     <div className="mb-3">
@@ -88,6 +111,17 @@ const TreeNode = ({
             </div>
             
             <div className="flex items-center gap-2">
+              {/* 360° Feedback button - visible based on role and position */}
+              {showFeedbackButton && (
+                <button
+                  onClick={handleFeedbackClick}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-900/30 hover:bg-blue-700/50 transition-colors"
+                  title="360° Feedback"
+                >
+                  <Users size={14} className="text-blue-400" />
+                </button>
+              )}
+              
               {/* Delete button - only visible to admins */}
               {isAdmin && onDeleteClick && (
                 <button
@@ -125,6 +159,7 @@ const TreeNode = ({
                 node={child} 
                 level={level + 1} 
                 onDeleteClick={onDeleteClick}
+                parentNode={node} // Pass the current node as parent to children
               />
             ))}
           </AnimatePresence>

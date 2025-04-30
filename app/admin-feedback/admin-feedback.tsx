@@ -118,16 +118,19 @@ export default function AdminFeedbackPage() {
     if (status === 'unauthenticated') {
       router.push('/login');
     } else if (status === 'authenticated') {
-      // Check if user is admin
+      // Check if user is admin or manager
       if (session?.user?.role === 'admin') {
         setIsAuthorized(true);
         fetchAvailableYears();
+      } else if (session?.user?.role === 'manager') {
+        // For managers, check if they have access to this subordinate
+        checkManagerAccess();
       } else {
         router.push('/unauthorized');
       }
       setIsLoading(false);
     }
-  }, [status, router, session]);
+  }, [status, router, session, searchedUserId]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -229,6 +232,30 @@ export default function AdminFeedbackPage() {
       console.error('Error fetching available feedback years:', error);
       // Fallback to current year if error
       setAvailableYears([new Date().getFullYear()]);
+    }
+  };
+
+  const checkManagerAccess = async () => {
+    if (!searchedUserId || !session?.user?.id) return;
+    
+    try {
+      const response = await fetch(`/api/check-manager-access?managerId=${session.user.id}&subordinateId=${searchedUserId}`);
+      
+      if (response.ok) {
+        const { hasAccess } = await response.json();
+        
+        if (hasAccess) {
+          setIsAuthorized(true);
+          fetchAvailableYears();
+        } else {
+          router.push('/unauthorized');
+        }
+      } else {
+        router.push('/unauthorized');
+      }
+    } catch (error) {
+      console.error('Error checking manager access:', error);
+      router.push('/unauthorized');
     }
   };
 
@@ -965,25 +992,27 @@ export default function AdminFeedbackPage() {
             </div>
           </div>
           
-          <Button
-            onClick={handleCreateFeedback}
-            disabled={!searchedUserId || isSubmitting}
-            className={`bg-blue-600 hover:bg-blue-700 text-white mt-8 px-6 py-2.5 rounded-md flex items-center gap-2 transition-colors ${
-              !searchedUserId || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                Processing...
-              </>
-            ) : (
-              <>
-                <Plus className="w-5 h-5" />
-                Create 360° Feedback
-              </>
-            )}
-          </Button>
+          {session?.user?.role === 'admin' && (
+            <Button
+              onClick={handleCreateFeedback}
+              disabled={!searchedUserId || isSubmitting}
+              className={`bg-blue-600 hover:bg-blue-700 text-white mt-8 px-6 py-2.5 rounded-md flex items-center gap-2 transition-colors ${
+                !searchedUserId || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5" />
+                  Create 360° Feedback
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1012,20 +1041,22 @@ export default function AdminFeedbackPage() {
                             </div>
                             <h4 className="text-white font-medium">{feedback.feedbackQuestion.questionText}</h4>
                           </div>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => handleEditQuestion(feedback.feedbackQuestion)}
-                              className="p-2 bg-amber-600/20 text-amber-400 rounded-md hover:bg-amber-600/40 transition-colors"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteQuestion(feedback.id)}
-                              className="p-2 bg-red-600/20 text-red-400 rounded-md hover:bg-red-600/40 transition-colors"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </button>
-                          </div>
+                          {session?.user?.role === 'admin' && (
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => handleEditQuestion(feedback.feedbackQuestion)}
+                                className="p-2 bg-amber-600/20 text-amber-400 rounded-md hover:bg-amber-600/40 transition-colors"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteQuestion(feedback.id)}
+                                className="p-2 bg-red-600/20 text-red-400 rounded-md hover:bg-red-600/40 transition-colors"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Question Type and Choices */}
@@ -1099,12 +1130,14 @@ export default function AdminFeedbackPage() {
                                             COMPLETED
                                           </span>
                                         )}
-                                        <button 
-                                          onClick={() => handleRemoveReviewer(reviewer.id)}
-                                          className="p-1 text-red-400 hover:text-red-300"
-                                        >
-                                          <Trash className="h-4 w-4" />
-                                        </button>
+                                        {session?.user?.role === 'admin' && (
+                                          <button 
+                                            onClick={() => handleRemoveReviewer(reviewer.id)}
+                                            className="p-1 text-red-400 hover:text-red-300"
+                                          >
+                                            <Trash className="h-4 w-4" />
+                                          </button>
+                                        )}
                                       </div>
                                     </div>
                                   </div>

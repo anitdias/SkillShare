@@ -8,12 +8,23 @@ interface TreeNode {
   id: string;
   employeeNo: string;
   name: string;
+  userId: string | null; // Add userId to the tree node
   children: (TreeNode | null)[];
 }
 
 export async function GET() {
   try {
-    const orgData = await prisma.organizationChart.findMany();
+    // Get all organization chart data
+    const orgData = await prisma.organizationChart.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    });
 
     // Find the root node (top-level manager)
     const rootNode = orgData.find(node => !node.managerNo);
@@ -26,7 +37,8 @@ export async function GET() {
       return {
         id: node.id,
         employeeNo: node.employeeNo,
-        name: node.employeeName, // Add position/designation
+        name: node.employeeName,
+        userId: node.user?.id || null, // Include user ID if available
         children: orgData
           .filter(n => n.managerNo === node.employeeNo)
           .map(child => buildTree(child.employeeNo))

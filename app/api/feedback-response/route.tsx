@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     // If userId and year are provided, fetch all responses for that user's feedback
     if (userId && year) {
       // Only admins can fetch all responses for a user
-      if (session.user.role !== 'admin') {
+      if (!session || (session.user.role !== 'admin' && session.user.role !== 'manager')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       
