@@ -80,6 +80,7 @@ export default function ReviewerFeedbackPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [isNotAssigned, setIsNotAssigned] = useState(false);
   const fulltext = 'SkillShare';
 
   // Check if user is authorized and fetch data
@@ -126,8 +127,10 @@ export default function ReviewerFeedbackPage() {
       );
       
       if (!isAssigned) {
-        // Not authorized, redirect to public profile
-        router.push(`/publicProfile?userid=${targetUserId}&username=${searchedUsername}`);
+        // Instead of redirecting, set states to show "not assigned" message
+        setIsNotAssigned(true);
+        setIsAuthorized(false);
+        setIsLoading(false);
         return;
       }
       
@@ -441,9 +444,111 @@ export default function ReviewerFeedbackPage() {
     );
   }
 
+  if (isNotAssigned) {
+    return (
+      <div className="min-h-screen bg-neutral-950 overflow-hidden px-4 py-12">
+        <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <h1 
+            className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap cursor-pointer"
+            onClick={() => router.push('/profile')}
+          >
+            {fulltext}
+          </h1>
+        </div>
+
+        {/* Right Section - Search Bar & Profile */}
+        <div className="flex items-center gap-4">
+
+          {/* Search Bar */}
+          <div className="relative w-64 sm:w-80">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            
+            <input
+              type="text"
+              placeholder="Search..."
+              value={query}
+              onChange={handleInputChange}
+              className="w-full p-2 pl-10 border-gray-300 border-2 rounded-full shadow-sm focus:outline-none text-white"
+            />
+            
+            {searchUsers.length > 0 && query && (
+              <div className="absolute bg-[#000000] top-11 w-72 left-4 border-gray-300 border-2 rounded-md shadow-lg z-30">
+                {searchUsers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="p-2 hover:bg-gray-400 cursor-pointer text-white"
+                    onClick={() => {
+                      router.push(`/reviewer-feedback?userid=${user.id}&username=${user.name}`);
+                      setQuery(""); // Clear search input
+                      setSearchUsers([]); // Clear results
+                    }}
+                  >
+                    {user.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <Avatar
+                as="button"
+                className="transition-transform hover:scale-105"
+                color="secondary"
+                size="md"
+                src={session?.user?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"}
+              />
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Profile Actions" variant="flat" className="bg-[#3b3b3b] text-white border border-gray-700 shadow-lg rounded-lg w-56">
+              <DropdownItem key="profile" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                router.push('/profile')
+              }}>
+                My Profile
+              </DropdownItem>
+              <DropdownItem key="competnecy" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                router.push('/competency')
+              }}>Competencies</DropdownItem>
+              {session?.user?.role === "admin" ? (
+                <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                  router.push('/upload-excel')
+                }}>Upload Excel</DropdownItem>
+              ) : null}
+              <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                router.push('/edit-profile')
+              }}>Edit Profile</DropdownItem>
+              <DropdownItem key="logout" color="danger" onPress={() => signOut({ callbackUrl: "/" })} className="hover:bg-red-500 text-red-400 hover:text-white transition p-3 rounded-md">
+                Log Out
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+        </nav>
+        
+        <div className="max-w-7xl mx-auto mt-32 text-center">
+          <div className="bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-sm p-8 rounded-xl shadow-lg border border-gray-800/50">
+            <h2 className="text-2xl font-bold text-white mb-4">No Feedback Assignment</h2>
+            <p className="text-gray-400 mb-6">
+              You are not assigned to review this user. Please select a different user.
+            </p>
+            <Button 
+              onClick={() => router.push(`/publicProfile?userid=${searchedUserId}&username=${searchedUsername}`)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition duration-300"
+            >
+              Go to User Profile
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthorized) {
     return null; // Will be redirected by useEffect
   }
+
+  
 
   return (
     <div className="min-h-screen bg-neutral-950 overflow-hidden px-4 py-12">
