@@ -68,6 +68,71 @@ interface SearchUser {
   name: string;
 }
 
+const calculateCategoryScore = (items: Competency[] | Goal[], isGoal = false) => {
+  if (!items || items.length === 0) return 0;
+  
+  let totalScore = 0;
+  let totalWeightage = 0;
+  
+  items.forEach(item => {
+    // Calculate average rating from employee, manager, and admin ratings
+    const avgRating = isGoal 
+      ? ((item as Goal).employeeRating + (item as Goal).managerRating + (item as Goal).adminRating) / 3
+      : ((item as Competency).employeeRating + (item as Competency).managerRating + (item as Competency).adminRating) / 3;
+    
+    // Add weighted score
+    totalScore += avgRating * item.weightage;
+    totalWeightage += item.weightage;
+  });
+  
+  // Return normalized score out of 100
+  return totalWeightage > 0 ? (totalScore / totalWeightage) * 25 : 0; // Scale to 0-100 (25 is max rating * 25)
+};
+
+const calculateOverallScore = (
+  goals: Goals,
+  competenciesByType: Record<string, Competency[]>
+) => {
+  // Category weightages
+  const weightages = {
+    'Goals': 0.30,
+    'Core Values': 0.20,
+    'Job Specific Competencies': 0.25,
+    'Behaviour Competencies': 0.15,
+    'Leadership Competencies': 0.10
+  };
+  
+  // Calculate scores for each category
+  const scores = {
+    'Goals': calculateCategoryScore(goals, true),
+    'Core Values': calculateCategoryScore(competenciesByType['Core Values'] || []),
+    'Job Specific Competencies': calculateCategoryScore(competenciesByType['Job Specific Competencies'] || []),
+    'Behaviour Competencies': calculateCategoryScore(competenciesByType['Behaviour Competencies'] || []),
+    'Leadership Competencies': calculateCategoryScore(competenciesByType['Leadership Competencies'] || [])
+  };
+  
+  // For debugging - log the competency types and scores
+  console.log('Available competency types:', Object.keys(competenciesByType));
+  console.log('Calculated scores:', scores);
+  
+  // Calculate weighted overall score
+  let overallScore = 0;
+  let availableWeightage = 0;
+  
+  Object.entries(scores).forEach(([category, score]) => {
+    if (score > 0) {
+      overallScore += score * weightages[category as keyof typeof weightages];
+      availableWeightage += weightages[category as keyof typeof weightages];
+    }
+  });
+  
+  // Normalize score if we have any valid categories
+  return {
+    categoryScores: scores,
+    overallScore: availableWeightage > 0 ? overallScore / availableWeightage : 0
+  };
+};
+
 export default function SearchCompetencyPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -107,6 +172,19 @@ export default function SearchCompetencyPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [scoreData, setScoreData] = useState<{
+    categoryScores: Record<string, number>;
+    overallScore: number;
+  }>({
+    categoryScores: {
+      'Goals': 0,
+      'Core Values': 0,
+      'Job Specific Competencies': 0,
+      'Behaviour Competencies': 0,
+      'Leadership Competencies': 0
+    },
+    overallScore: 0
+  });
 
   useEffect(() => {
     // Delay loading of heavy background effects
@@ -189,6 +267,38 @@ export default function SearchCompetencyPage() {
   
     fetchUsers();
   }, [debouncedQuery]);
+
+  useEffect(() => {
+    if (groupedGoals.length > 0 || groupedCompetencies.length > 0) {
+      // Create a map of competency types for easier access
+      const competenciesByType: Record<string, Competency[]> = {};
+      
+      // Log the actual competency types for debugging
+      console.log('Competency groups:', groupedCompetencies.map(g => g.type));
+      
+      groupedCompetencies.forEach(group => {
+        // Normalize category names to match the expected format in weightages
+        let normalizedType = group.type;
+        
+        // Map any variations of category names to the expected format
+        if (group.type.toLowerCase().includes('core value')) {
+          normalizedType = 'Core Values';
+        } else if (group.type.toLowerCase().includes('behaviour')) {
+          normalizedType = 'Behaviour Competencies';
+        } else if (group.type.toLowerCase().includes('job specific')) {
+          normalizedType = 'Job Specific Competencies';
+        } else if (group.type.toLowerCase().includes('leadership')) {
+          normalizedType = 'Leadership Competencies';
+        }
+        
+        competenciesByType[normalizedType] = group.competencies;
+      });
+      
+      // Calculate scores
+      const newScoreData = calculateOverallScore(groupedGoals, competenciesByType);
+      setScoreData(newScoreData);
+    }
+  }, [groupedGoals, groupedCompetencies]);
 
   const Icon = () => {
     return (
@@ -510,17 +620,128 @@ export default function SearchCompetencyPage() {
   };
 
   // Create tabs for competencies
-  const competencyTabs = groupedCompetencies.map(group => ({
-    title: group.type,
-    value: group.type,
-    content: (
-      <div className="w-full h-full p-4 bg-neutral-950 rounded-xl">
-        <div className="flex justify-between items-center relative z-10">
-          <div className="flex flex-col">
-            <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Competency Type</span>
-            <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">{group.type}</h1>
+  const competencyTabs = [
+    // Add Goals as the first tab
+    {
+      title: "Goals",
+      value: "goals",
+      content: (
+        <div className="w-full h-full p-4 bg-neutral-950 rounded-xl">
+          <div className="flex justify-between items-center relative z-10">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Performance</span>
+              <div className="flex items-center gap-3">
+                <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">Goals</h1>
+              </div>
+            </div>
+            {/* Add Goal Button - Only visible for admin/manager */}
+            {(session?.user?.role === 'admin' || session?.user?.role === 'manager') && (
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  onClick={() => setShowAddGoalModal(true)}
+                  className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 hover:border-blue-400 text-white rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-blue-500/20"
+                >
+                  <LucidePlus size={20} />
+                </Button>
+              </motion.div>
+            )}
+          </div>
+          
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
+          
+          <div className="w-full flex flex-col mb-8">
+            <div className="flex-1 overflow-hidden">
+              {(() => {
+                // Check if goals array exists and has items
+                if (groupedGoals && groupedGoals.length > 0) {
+                  return (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="carousel-container h-full py-3"
+                    >
+                      <Carousel
+                        items={groupedGoals.map((goal, idx) => (
+                          <Card 
+                            key={goal.id}
+                            card={{
+                              title: goal.goalName,
+                              category: `Weightage: ${goal.weightage}%`,
+                              src: "", 
+                              content: (
+                                <motion.div
+                                  whileHover={{ scale: 1.03, y: -5 }}
+                                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                  onClick={() => {
+                                    setExpandedGoal(goal.id);
+                                    setRatingValue(
+                                      session?.user?.role === 'admin' 
+                                        ? goal.adminRating 
+                                        : goal.managerRating
+                                    );
+                                  }}
+                                >
+                                  <GlowingStarsBackgroundCard
+                                    className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-blue-500/20"
+                                  >
+                                    <div className="flex justify-start">
+                                      <GlowingStarsTitle>{goal.goalName}</GlowingStarsTitle>
+                                    </div>
+                                    <div className="flex justify-between items-end">
+                                      <div className="flex flex-col">
+                                        <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
+                                          Weightage: {goal.weightage}%
+                                        </span>
+                                      </div>
+                                      <motion.div                                            
+                                        className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.15)] flex items-center justify-center backdrop-blur-sm hover:bg-[hsla(0,0%,100%,.25)] transition-all duration-300"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        <Icon />
+                                      </motion.div>
+                                    </div>                          
+                                  </GlowingStarsBackgroundCard>
+                                </motion.div>
+                              )
+                            }}
+                            index={idx}
+                            layout={false}
+                          />
+                        ))}
+                        initialScroll={0}
+                      />
+                    </motion.div>
+                  );
+                }
+                return (
+                  <div className="h-32 flex items-center justify-center my-4">
+                    <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700/30 shadow-lg text-center">
+                      <p className="text-gray-400 text-lg mb-3">No goals found for this user</p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
+      ),
+    },
+    // Add the existing competency tabs
+    ...groupedCompetencies.map(group => ({
+      title: group.type,
+      value: group.type,
+      content: (
+        <div className="w-full h-full p-4 bg-neutral-950 rounded-xl">
+          <div className="flex justify-between items-center relative z-10">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Performance</span>
+              <div className="flex items-center gap-3">
+                <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">{group.type}</h1>
+              </div>
+            </div>
+          </div>
         
         <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
         
@@ -602,7 +823,8 @@ export default function SearchCompetencyPage() {
         </div>
       </div>
     ),
-  }));
+  }))
+];
 
   
 
@@ -757,116 +979,68 @@ export default function SearchCompetencyPage() {
                 src: userInfo?.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
               }]}
             />
+            
+            {/* Overall Score Card */}
+            <div className="flex items-center justify-center mt-6 mb-1">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 p-6 rounded-2xl border border-blue-500/20 shadow-lg backdrop-blur-sm"
+              >
+                <h2 className="text-xl text-center font-bold text-white mb-4">Employee Score</h2>
+                <div className="flex flex-row items-start justify-between gap-6">
+                  {/* Circular progress indicator */}
+                  <div className="relative w-40 h-40">
+                    <svg className="w-full h-full" viewBox="0 0 100 100">
+                      <circle 
+                        cx="50" cy="50" r="45" 
+                        fill="none" 
+                        stroke="#1e293b" 
+                        strokeWidth="8"
+                      />
+                      <circle 
+                        cx="50" cy="50" r="45" 
+                        fill="none" 
+                        stroke="#3b82f6" 
+                        strokeWidth="8"
+                        strokeDasharray={`${2 * Math.PI * 45 * scoreData.overallScore / 100} ${2 * Math.PI * 45 * (1 - scoreData.overallScore / 100)}`}
+                        strokeDashoffset={2 * Math.PI * 45 * 0.25}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center flex-col">
+                      <span className="text-3xl font-bold text-white">{scoreData.overallScore.toFixed(1)}%</span>
+                      <span className="text-xs text-blue-300">Overall Performance</span>
+                    </div>
+                  </div>
+                  
+                  {/* Category breakdown - now positioned to the right */}
+                  <div className="space-y-2 flex-1">
+                    {Object.entries(scoreData.categoryScores).map(([category, score]) => (
+                      <div key={category} className="flex justify-between items-center">
+                        <span className="text-sm text-gray-300 mr-1">{category}</span>
+                        <div className="flex items-center">
+                          <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 rounded-full" 
+                              style={{ width: `${score}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-blue-300 ml-2">{score.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
     
           {/* Competencies Section */}
           <div className="h-[38rem] [perspective:1000px] flex flex-col max-w-7xl mx-auto w-full items-start justify-start">
             <Tabs tabs={competencyTabs} />
           </div>
-          
-          
-    
-          {/* Goals Section */}
-          <div className="max-w-7xl mx-auto w-full mb-20">
-            <div className="w-full p-4 bg-neutral-950 rounded-xl">
-            <div className="flex justify-between items-center relative z-10">
-                <div className="flex flex-col">
-                <span className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Performance</span>
-                <h1 className="relative text-md md:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-neutral-200 to-neutral-500 font-bold font-mono">Goals</h1>
-                </div>
-                {/* Add Goal Button - Only visible for admin/manager */}
-                {(session?.user?.role === 'admin' || session?.user?.role === 'manager') && (
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button 
-                      onClick={() => setShowAddGoalModal(true)}
-                      className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/50 hover:border-blue-400 text-white rounded-full p-2 transition-all duration-300 shadow-lg hover:shadow-blue-500/20"
-                    >
-                      <LucidePlus size={20} />
-                    </Button>
-                  </motion.div>
-                )}
-            </div>
-            
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent my-4" />
-            
-            <div className="w-full flex flex-col mb-8">
-                <div className="flex-1 overflow-hidden">
-                {(() => {
-                    // Check if goals array exists and has items
-                    if (groupedGoals && groupedGoals.length > 0) {
-                    return (
-                        <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                        className="carousel-container h-full py-3"
-                        >
-                        <Carousel
-                            items={groupedGoals.map((goal, idx) => (
-                            <Card 
-                                key={goal.id}
-                                card={{
-                                title: goal.goalName,
-                                category: `Weightage: ${goal.weightage}%`,
-                                src: "", 
-                                content: (
-                                    <motion.div
-                                    whileHover={{ scale: 1.03, y: -5 }}
-                                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                                    onClick={() => {
-                                        setExpandedGoal(goal.id);
-                                        setRatingValue(
-                                          session?.user?.role === 'admin' 
-                                            ? goal.adminRating 
-                                            : goal.managerRating
-                                        );
-                                      }}
-                                    >
-                                    <GlowingStarsBackgroundCard
-                                        className="cursor-pointer transition-all duration-300 shadow-xl hover:shadow-blue-500/20"
-                                    >
-                                        <div className="flex justify-start">
-                                        <GlowingStarsTitle>{goal.goalName}</GlowingStarsTitle>
-                                        </div>
-                                        <div className="flex justify-between items-end">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs text-purple-300 px-2 py-1 rounded-full bg-purple-500/10 border border-purple-500/20">
-                                            Weightage: {goal.weightage}%
-                                            </span>
-                                        </div>
-                                        <motion.div                                            
-                                            className="h-8 w-8 rounded-full bg-[hsla(0,0%,100%,.15)] flex items-center justify-center backdrop-blur-sm hover:bg-[hsla(0,0%,100%,.25)] transition-all duration-300"
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                        >
-                                            <Icon />
-                                        </motion.div>
-                                        </div>                          
-                                    </GlowingStarsBackgroundCard>
-                                    </motion.div>
-                                )
-                                }}
-                                index={idx}
-                                layout={false}
-                            />
-                            ))}
-                            initialScroll={0}
-                        />
-                        </motion.div>
-                    );
-                    }
-                    return (
-                    <div className="h-32 flex items-center justify-center my-4">
-                        <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-6 rounded-xl border border-gray-700/30 shadow-lg text-center">
-                        <p className="text-gray-400 text-lg mb-3">No goals found for this user</p>
-                        </div>
-                    </div>
-                    );
-                })()}
-                </div>
-            </div>
-            </div>
-            </div>
 
             {expandedCompetency && (() => {
             const competencyType = groupedCompetencies.find(group => 

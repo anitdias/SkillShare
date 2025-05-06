@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SparklesCore } from "@/components/ui/sparkles";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, ChevronRight, Users, Plus, X, Trash } from "lucide-react";
+import { ChevronDown, ChevronRight, Users, Plus, X, Trash, Star } from "lucide-react";
 import {
     DropdownItem,
     DropdownTrigger,
@@ -66,9 +66,15 @@ const TreeNode = ({
     }
   };
 
+  const handleCompetencyClick = () => {
+    if (node.userId) {
+      router.push(`/search-competency?userid=${node.userId}&username=${node.name}`);
+    }
+  };
+
   const isUserManagerOfThisNode = parentNode && 
     session?.user?.employeeNo && 
-    parentNode.employeeNo === session.user.employeeNo;
+    parentNode.employeeNo === session.user.employeeNo;;
 
     const showFeedbackButton = node.userId && (
       // Admin can see feedback button on all nodes except those with admin role
@@ -76,6 +82,10 @@ const TreeNode = ({
       (isAdmin && node.position !== "admin" && node.userId !== session?.user?.id) || 
       // Manager can see feedback button ONLY on their direct subordinates
       (isManager && isUserManagerOfThisNode)
+    );
+
+    const showCompetencyButton = node.userId && (
+      isAdmin || (isManager && isUserManagerOfThisNode)
     );
 
   return (
@@ -109,6 +119,18 @@ const TreeNode = ({
                 )}
               </div>
             </div>
+
+            <div className="flex items-center gap-2">
+              {/* Competency button - visible to admins and managers */}
+              {showCompetencyButton && (
+                <button
+                  onClick={handleCompetencyClick}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-900/30 hover:bg-purple-700/50 transition-colors"
+                  title="View Competencies"
+                >
+                  <Star size={14} className="text-purple-400" />
+                </button>
+              )}
             
             <div className="flex items-center gap-2">
               {/* 360° Feedback button - visible based on role and position */}
@@ -146,6 +168,7 @@ const TreeNode = ({
                 </button>
               )}
             </div>
+          </div>
           </div>
         </Card>
       </motion.div>
