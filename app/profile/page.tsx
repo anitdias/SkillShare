@@ -684,6 +684,12 @@ export default function ProfilePage() {
               >
                 Recommendations
               </Button>
+              <Button 
+                onClick={() => router.push('/org-chart')}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                Org Chart
+              </Button>
               <Dropdown placement="bottom">
                 <DropdownTrigger>
                   <Button 
