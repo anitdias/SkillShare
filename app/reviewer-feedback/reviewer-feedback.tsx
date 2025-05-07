@@ -432,14 +432,10 @@ export default function ReviewerFeedbackPage() {
     return (
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-neutral-950">
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-white text-center"
-        >
-          <div className="w-12 h-12 border-4 border-t-blue-500 border-b-blue-700 border-l-blue-600 border-r-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-xl font-medium">Loading...</p>
-        </motion.div>
+          className="w-12 h-12 border-4 border-t-transparent border-white rounded-full"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        />
       </div>
     );
   }

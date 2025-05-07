@@ -19,10 +19,15 @@ export async function POST(request: Request) {
 
     const { searchedUserId } = await request.json();
 
-    // Fetch user email and image
+    // Fetch user email, image, description and designation
     const user = await prisma.user.findUnique({
       where: { id: searchedUserId },
-      select: { email: true, image: true },
+      select: { 
+        email: true, 
+        image: true,
+        description: true,
+        designation: true 
+      },
     });
 
     if (!user) {
@@ -41,6 +46,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       email: user.email,
       image: user.image ?? null, // Ensure null if image is not available
+      description: user.description ?? null, // Add description to response
+      designation: user.designation ?? null, // Add designation to response
       skills: userSkills,
     });
 

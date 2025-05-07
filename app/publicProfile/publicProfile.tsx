@@ -59,7 +59,12 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [searchUsers, setSearchUsers] = useState<SearchUser[]>([]);
-  const [searchedUserInfo, setSearchedUserInfo] = useState({ email: '', image: null });
+  const [searchedUserInfo, setSearchedUserInfo] = useState({ 
+    email: '', 
+    image: null, 
+    description: '', 
+    designation: '' 
+  });
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -134,10 +139,15 @@ export default function ProfilePage() {
       });
   
       if (skillRes.ok) {
-        const { email, image, skills } = await skillRes.json();
+        const { email, image, skills, description, designation } = await skillRes.json();
   
         setSearchedUserSkills(skills);
-        setSearchedUserInfo({ email, image });
+        setSearchedUserInfo({ 
+          email, 
+          image, 
+          description: description || "", 
+          designation: designation || "" 
+        });
       }
     } catch (error) {
       console.error('Error while fetching user data:', error);
@@ -481,11 +491,11 @@ export default function ProfilePage() {
       )}
   
       <div className="grid grid-cols-1 md:grid-cols-2 ml-4 md:ml-12 mt-20 md:mt-2">
-        <AnimatedTestimonials
+      <AnimatedTestimonials
           testimonials={[{
-            quote: "Passionate about building scalable web applications and mentoring developers.",
+            quote: searchedUserInfo.description || "Passionate about building scalable web applications and mentoring developers.",
             name: searchedUsername || "User",
-            designation: "Software Developer",
+            designation: searchedUserInfo.designation || "Software Developer",
             src: searchedUserInfo.image || "https://plus.unsplash.com/premium_photo-1711044006683-a9c3bbcf2f15?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
           }]}
         />
