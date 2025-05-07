@@ -31,7 +31,11 @@ export default function ThreeDMarqueeDemo() {
     ...baseImages,
     ...baseImages.slice().reverse(),
     ...baseImages,
-    ...baseImages.slice().reverse()
+    ...baseImages.slice().reverse(),
+   ...baseImages,
+   ...baseImages.slice().reverse(),
+   ...baseImages,
+   ...baseImages.slice().reverse(),
   ].slice(0, 40);
 
   return (

@@ -18,6 +18,7 @@ import {
 } from "@heroui/react";
 import { globeConfig, sampleArcs } from "@/lib/globe_data";
 import dynamic from 'next/dynamic';
+import { Button } from "@/components/ui/button";
 
 const World = dynamic(() => import('@/components/ui/globe'), {
   ssr: false, // Disable server-side rendering
@@ -204,16 +205,30 @@ export default function GoalsPage() {
   return (
     <div className="min-h-screen bg-neutral-950 overflow-hidden px-4 py-12">
       <nav className="h-16 bg-[#000000] shadow-md fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 sm:px-6">
-        {/* Left Section - Sidebar & Title */}
-        <div className="flex items-center gap-3">
-          {/* Title */}
-          <h1 
+            {/* Left Section - Title */}
+            <div className="flex items-center gap-3">
+            <h1 
                 className="hidden sm:block text-lg font-bold font-mono text-white bg-gradient-to-br from-[#222222] via-[#2c3e50] to-[#0a66c2] shadow-md rounded-lg px-2 py-1 sm:px-4 sm:py-1 whitespace-nowrap cursor-pointer"
                 onClick={() => router.push('/profile')}
               >
                 {fulltext}
               </h1>
-        </div>
+            </div>
+    
+            <div className="hidden md:flex items-center space-x-4">
+              <Button 
+                onClick={() => router.push(`/profile`)}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                My Profile
+              </Button>
+              <Button 
+                onClick={() => router.push(`/competency`)}
+                className="bg-transparent text-md hover:bg-gray-800 text-white rounded-md px-6 py-2 transition duration-300"
+              >
+                My Competencies
+              </Button>
+            </div>
 
         {/* Right Section - Search Bar & Sign Out */}
         <div className="flex items-center gap-4">
@@ -270,12 +285,15 @@ export default function GoalsPage() {
                   </DropdownItem>
                   <DropdownItem key="competnecy" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/competency')
-                  }}>Competencies</DropdownItem>
+                  }}>My Competencies</DropdownItem>
                   {session?.user?.role === "admin" ? (
                     <DropdownItem key="upload-excel" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                       router.push('/upload-excel')
                     }}>Upload Excel</DropdownItem>
                   ) : null}
+                  <DropdownItem key="org-chart" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
+                    router.push('/org-chart')
+                  }}>Org-Chart</DropdownItem>
                   <DropdownItem key="help_and_feedback" className="hover:bg-gray-600 transition p-3 rounded-md" onPress={() => {
                     router.push('/edit-profile')
                   }}>Edit Profile</DropdownItem>
