@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 export default function ThreeDMarqueeDemo() {
-  const text = '<SkillShare/>';
+  const text = '<Skillsikt/>';
   const { data: session } = useSession();
   const router = useRouter();
 

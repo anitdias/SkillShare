@@ -81,7 +81,7 @@ export default function ReviewerFeedbackPage() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [isNotAssigned, setIsNotAssigned] = useState(false);
-  const fulltext = 'SkillShare';
+  const fulltext = "<Skillsikt/>";
 
   // Check if user is authorized and fetch data
   useEffect(() => {

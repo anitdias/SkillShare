@@ -24,7 +24,7 @@ export default function EmployeeVerification() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const fulltext = "<SkillShare/>";
+  const fulltext = "<Skillsikt/>";
 
   useEffect(() => {
     if (status === 'unauthenticated') {

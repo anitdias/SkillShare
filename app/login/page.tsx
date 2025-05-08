@@ -68,7 +68,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md p-8 space-y-6 bg-[#000000]/90 border-[#3b3b3b] shadow-xl rounded-xl relative z-10">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
-          <p className="text-white">Sign in to continue to SkillShare</p>
+          <p className="text-white">Sign in to continue to Skillsikt</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

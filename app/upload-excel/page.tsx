@@ -48,7 +48,7 @@ export default function UploadExcel() {
   const [feedbackUploadStatus, setFeedbackUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [feedbackStatusMessage, setFeedbackStatusMessage] = useState("");
 
-  const fulltext = "<SkillShare/>";
+  const fulltext = "<Skillsikt/>";
 
   useEffect(() => {
     if (status === "authenticated") {

@@ -216,7 +216,7 @@ export default function OrganizationPage() {
   const [employeeToDelete, setEmployeeToDelete] = useState<{employeeNo: string, name: string} | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const fulltext = "<SkillShare/>";
+  const fulltext = "<Skillsikt/>";
 
   useEffect(() => {
     const fetchOrgChart = async () => {

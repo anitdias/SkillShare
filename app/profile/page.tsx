@@ -101,7 +101,7 @@ export default function ProfilePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const fulltext = "<SkillShare/>";
+  const fulltext = "<Skillsikt/>";
   
   useEffect(() => {
     if (status === 'unauthenticated') {

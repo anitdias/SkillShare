@@ -204,7 +204,7 @@ export default function SearchCompetencyPage() {
     }, 0);
   }, [searchParams]);
 
-  const fulltext = "<Skill Share/>";
+  const fulltext = "<Skillsikt/>";
   
   useEffect(() => {
     if (status === 'unauthenticated') {

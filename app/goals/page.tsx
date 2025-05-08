@@ -63,7 +63,7 @@ export default function GoalsPage() {
   const [showBackgroundEffects, setShowBackgroundEffects] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const fulltext = "<Skill Share/>";
+  const fulltext = "<Skillsikt/>";
 
   useEffect(() => {
     // Delay loading of heavy background effects
