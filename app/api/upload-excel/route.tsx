@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import * as XLSX from "xlsx";
 import prisma from "@/lib/prisma";
+import { chunk } from "lodash";
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,64 +82,146 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create a job record to track progress
-    const job = await prisma.importJob.create({
-      data: {
-        userId: session.user.id,
-        year: currentYear,
-        status: "PENDING",
-        data: {
-          goals,
-          competencies
-        },
-        steps: {
-          clearData: "PENDING",
-          importCompetencies: "PENDING",
-          importGoals: "PENDING",
-          mapCompetencies: "PENDING",
-          mapGoals: "PENDING"
-        }
-      }
-    });
+    // Fetch all users
+    let competenciesAdded = 0;
+    let userCompetenciesAdded = 0;
+    let goalsAdded = 0;
+    let userGoalsAdded = 0;
 
-    // Instead of using fetch, directly process the first step
-    // This avoids the localhost connection issue on Vercel
-    try {
-      // Use a fixed base URL for production or fallback to localhost for development
-      const baseUrl = process.env.NODE_ENV === 'production' 
-        ? 'https://skill-share-six.vercel.app' 
-        : 'http://localhost:3000';
-      
-      console.log(`Using base URL: ${baseUrl} to trigger process-step`);
-      
-      // Construct the full URL
-      const processUrl = `${baseUrl}/api/upload-excel/process-step?jobId=${job.id}&step=1`;
-      
-      console.log(`Triggering first step at: ${processUrl}`);
-      
-      // Make the request with simplified configuration
-      const response = await fetch(processUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        cache: 'no-store'
+    // Execute all operations in a single transaction
+    await prisma.$transaction(async (tx) => {
+      // Fetch all users within the transaction
+      const users = await tx.user.findMany({ select: { id: true } });
+
+      // Find competency IDs for the current year to delete
+      const competencyIdsForYear = await tx.competency.findMany({
+        where: { year: currentYear },
+        select: { id: true }
       });
       
-      if (!response.ok) {
-        console.error(`Error response from process-step: ${response.status}`);
-      } else {
-        console.log('Successfully triggered first processing step');
+      const competencyIds = competencyIdsForYear.map(comp => comp.id);
+      
+      // Find goal IDs for the current year to delete
+      const goalIdsForYear = await tx.goal.findMany({
+        where: { year: currentYear },
+        select: { id: true }
+      });
+      
+      const goalIds = goalIdsForYear.map(goal => goal.id);
+
+      // 1. Clear existing data for the current year
+      await tx.userCompetency.deleteMany({
+        where: { competencyId: { in: competencyIds } }
+      });
+      
+      await tx.competency.deleteMany({
+        where: { year: currentYear }
+      });
+      
+      await tx.userGoal.deleteMany({
+        where: { goalId: { in: goalIds } }
+      });
+      
+      await tx.goal.deleteMany({
+        where: { year: currentYear }
+      });
+
+      // 2. Process competencies
+      const newCompetencies = await tx.competency.createMany({
+        data: competencies.map(comp => ({
+          competencyType: comp.type,
+          competencyName: comp.name,
+          weightage: comp.weightage,
+          description: comp.description,
+          year: comp.year
+        })),
+        skipDuplicates: true
+      });
+
+      competenciesAdded = newCompetencies.count;
+
+      // 3. Process goals
+      const newGoals = await tx.goal.createMany({
+        data: goals.map(goal => ({
+          goalCategory: goal.category,
+          goalName: goal.name,
+          goalTitle: goal.title,
+          metric: goal.metric,
+          weightage: goal.weightage,
+          year: goal.year
+        })),
+        skipDuplicates: true
+      });
+
+      goalsAdded = newGoals.count;
+
+      // 4. Fetch newly inserted competencies
+      const insertedCompetencies = await tx.competency.findMany({
+        where: { year: currentYear },
+        select: { id: true, competencyName: true }
+      });
+
+      // 5. Fetch newly inserted goals
+      const insertedGoals = await tx.goal.findMany({
+        where: { year: currentYear },
+        select: { id: true, goalName: true }
+      });
+
+      // 6. Create user-competency mappings in chunks
+      const batchSize = 50;
+      const userCompetencyData = [];
+
+      for (const comp of insertedCompetencies) {
+        for (const user of users) {
+          userCompetencyData.push({
+            userId: user.id,
+            competencyId: comp.id,
+            employeeRating: 0,
+            managerRating: 0,
+            adminRating: 0
+          });
+        }
       }
-    } catch (err) {
-      console.error("Error triggering first step:", err);
-      // Continue anyway - the user can manually trigger processing if needed
-    }
+
+      const userCompetencyChunks = chunk(userCompetencyData, batchSize);
+      for (const batch of userCompetencyChunks) {
+        await tx.userCompetency.createMany({ data: batch });
+        userCompetenciesAdded += batch.length;
+      }
+      
+      // 7. Create user-goal mappings in chunks
+      const userGoalData = [];
+
+      for (const goal of insertedGoals) {
+        for (const user of users) {
+          userGoalData.push({
+            userId: user.id,
+            goalId: goal.id,
+            employeeRating: 0,
+            managerRating: 0,
+            adminRating: 0
+          });
+        }
+      }
+
+      const userGoalChunks = chunk(userGoalData, batchSize);
+      for (const batch of userGoalChunks) {
+        await tx.userGoal.createMany({ data: batch });
+        userGoalsAdded += batch.length;
+      }
+    }, {
+      // Use a longer timeout for this complex transaction
+      timeout: 60000 // 60 seconds
+    });
 
     return NextResponse.json({
       success: true,
-      jobId: job.id,
-      message: `Excel file processed. Data import has started for year ${currentYear}. You can check the status using the job ID.`
+      competenciesAdded,
+      userCompetenciesAdded,
+      goalsAdded,
+      userGoalsAdded,
+      year: currentYear,
+      message: `Goals and Competencies for year ${currentYear} processed successfully`
     });
 
   } catch (error) {

@@ -38,10 +38,6 @@ export default function UploadExcel() {
   const [isOrgUploading, setIsOrgUploading] = useState(false);
   const [orgUploadStatus, setOrgUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [orgStatusMessage, setOrgStatusMessage] = useState("");
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [jobStatus, setJobStatus] = useState<"PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | null>(null);
-  const [processingSteps, setProcessingSteps] = useState<Record<string, string>>({});
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [feedbackFile, setFeedbackFile] = useState<File | null>(null);
   const [isFeedbackUploading, setIsFeedbackUploading] = useState(false);
@@ -60,15 +56,6 @@ export default function UploadExcel() {
       }
     }
   }, [session, status, router]);
-  
-  useEffect(() => {
-    // Clean up polling when component unmounts
-    return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-    };
-  }, [pollingInterval]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -184,56 +171,6 @@ export default function UploadExcel() {
     }
   };
 
-  const startPollingJobStatus = (id: string) => {
-    // Clear any existing polling
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-
-    // Set initial job status
-    setJobStatus("PENDING");
-    
-    // Start polling every 3 seconds
-    const interval = setInterval(async () => {
-      try {
-        const response = await fetch(`/api/upload-excel/job-status?jobId=${id}`);
-        const data = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch job status");
-        }
-        
-        setJobStatus(data.job.status);
-        setProcessingSteps(data.job.steps || {});
-        
-        // If job is completed or failed, stop polling
-        if (data.job.status === "COMPLETED" || data.job.status === "FAILED") {
-          clearInterval(interval);
-          setPollingInterval(null);
-          
-          if (data.job.status === "COMPLETED") {
-            setUploadStatus("success");
-            setStatusMessage(`Successfully processed competencies for year ${data.job.year}. All data has been imported.`);
-          } else if (data.job.status === "FAILED") {
-            setUploadStatus("error");
-            setStatusMessage(data.job.error || "An error occurred during processing");
-          }
-          
-          setIsUploading(false);
-        }
-      } catch (error) {
-        console.error("Error polling job status:", error);
-        clearInterval(interval);
-        setPollingInterval(null);
-        setUploadStatus("error");
-        setStatusMessage(error instanceof Error ? error.message : "Failed to check job status");
-        setIsUploading(false);
-      }
-    }, 10000);
-    
-    setPollingInterval(interval);
-  };
-
   // Replace the handleUpload function with this updated version
   const handleUpload = async () => {
     if (!file) return;
@@ -241,9 +178,6 @@ export default function UploadExcel() {
     setIsUploading(true);
     setUploadStatus("idle");
     setStatusMessage("");
-    setJobId(null);
-    setJobStatus(null);
-    setProcessingSteps({});
   
     try {
       const formData = new FormData();
@@ -258,10 +192,8 @@ export default function UploadExcel() {
       const data = await response.json();
   
       if (response.ok) {
-        // Store the job ID and start polling
-        setJobId(data.jobId);
-        setStatusMessage(data.message);
-        startPollingJobStatus(data.jobId);
+        setUploadStatus("success");
+        setStatusMessage(`Successfully processed ${data.competenciesAdded} competencies for year ${data.year} and created ${data.userCompetenciesAdded} user competency mappings.`);
       } else {
         throw new Error(data.error || "Failed to upload competencies");
       }
@@ -269,54 +201,9 @@ export default function UploadExcel() {
       console.error("Error uploading competencies:", error);
       setUploadStatus("error");
       setStatusMessage(error instanceof Error ? error.message : "An unknown error occurred");
+    } finally {
       setIsUploading(false);
     }
-  };
-
-  const renderProcessingSteps = () => {
-    if (!processingSteps || Object.keys(processingSteps).length === 0) {
-      return null;
-    }
-
-    const stepLabels: Record<string, string> = {
-      clearData: "Clearing existing data",
-      importCompetencies: "Importing competencies",
-      importGoals: "Importing goals",
-      mapCompetencies: "Mapping competencies to users",
-      mapGoals: "Mapping goals to users"
-    };
-
-    return (
-      <div className="mt-4 bg-gray-900/50 p-4 rounded-md border border-gray-700">
-        <h3 className="text-white text-sm font-medium mb-3">Processing Status:</h3>
-        {jobId && (
-          <p className="text-gray-400 text-xs mb-3">Job ID: {jobId}</p>
-        )}
-        <div className="space-y-2">
-          {Object.entries(processingSteps).map(([step, status]) => (
-            <div key={step} className="flex items-center">
-              {status === "COMPLETED" ? (
-                <Check className="text-green-500 mr-2 flex-shrink-0" size={16} />
-              ) : status === "FAILED" ? (
-                <AlertCircle className="text-red-500 mr-2 flex-shrink-0" size={16} />
-              ) : status === "PROCESSING" ? (
-                <div className="w-4 h-4 mr-2 border-2 border-t-transparent border-blue-500 rounded-full animate-spin" />
-              ) : (
-                <div className="w-4 h-4 mr-2 border-2 border-gray-500 rounded-full" />
-              )}
-              <span className={`text-sm ${
-                status === "COMPLETED" ? "text-green-300" : 
-                status === "FAILED" ? "text-red-300" : 
-                status === "PROCESSING" ? "text-blue-300" : 
-                "text-gray-400"
-              }`}>
-                {stepLabels[step] || step}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   const handleOrgFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -614,20 +501,6 @@ export default function UploadExcel() {
                   <div className="bg-green-900/30 border border-green-800 p-4 rounded-md flex items-start">
                     <Check className="text-green-500 mr-2 mt-0.5 flex-shrink-0" size={18} />
                     <p className="text-green-300 text-sm">{statusMessage}</p>
-                  </div>
-                )}
-                
-                {isUploading && jobStatus && (
-                  <div className="bg-blue-900/30 border border-blue-800 p-4 rounded-md">
-                    <div className="flex items-start mb-3">
-                      <div className="w-5 h-5 border-2 border-t-transparent border-blue-500 rounded-full animate-spin mr-2 mt-0.5" />
-                      <p className="text-blue-300 text-sm">
-                        {jobStatus === "PENDING" ? "Job created, waiting to start..." : 
-                         jobStatus === "PROCESSING" ? "Processing your Excel file..." : 
-                         "Finalizing import..."}
-                      </p>
-                    </div>
-                    {renderProcessingSteps()}
                   </div>
                 )}
                 

@@ -85,8 +85,8 @@ const calculateCategoryScore = (items: Competency[] | Goal[], isGoal = false) =>
     totalWeightage += item.weightage;
   });
   
-  // Return normalized score out of 100
-  return totalWeightage > 0 ? (totalScore / totalWeightage) * 25 : 0; // Scale to 0-100 (25 is max rating * 25)
+  // Return normalized score out of 4 with one decimal precision
+  return totalWeightage > 0 ? parseFloat(((totalScore / totalWeightage)).toFixed(1)) : 0;
 };
 
 const calculateOverallScore = (
@@ -126,10 +126,10 @@ const calculateOverallScore = (
     }
   });
   
-  // Normalize score if we have any valid categories
+  // Normalize score if we have any valid categories and format to one decimal place
   return {
     categoryScores: scores,
-    overallScore: availableWeightage > 0 ? overallScore / availableWeightage : 0
+    overallScore: availableWeightage > 0 ? parseFloat((overallScore / availableWeightage).toFixed(1)) : 0
   };
 };
 
@@ -1014,13 +1014,13 @@ export default function SearchCompetencyPage() {
                         fill="none" 
                         stroke="#3b82f6" 
                         strokeWidth="8"
-                        strokeDasharray={`${2 * Math.PI * 45 * scoreData.overallScore / 100} ${2 * Math.PI * 45 * (1 - scoreData.overallScore / 100)}`}
+                        strokeDasharray={`${2 * Math.PI * 45 * scoreData.overallScore / 4} ${2 * Math.PI * 45 * (1 - scoreData.overallScore / 4)}`}
                         strokeDashoffset={2 * Math.PI * 45 * 0.25}
                         strokeLinecap="round"
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center flex-col">
-                      <span className="text-3xl font-bold text-white">{scoreData.overallScore.toFixed(1)}%</span>
+                      <span className="text-3xl font-bold text-white">{scoreData.overallScore.toFixed(1)}/4</span>
                       <span className="text-xs text-blue-300">Overall Performance</span>
                     </div>
                   </div>
@@ -1034,10 +1034,10 @@ export default function SearchCompetencyPage() {
                           <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-blue-500 rounded-full" 
-                              style={{ width: `${score}%` }}
+                              style={{ width: `${(score / 4) * 100}%` }}
                             />
                           </div>
-                          <span className="text-xs text-blue-300 ml-2">{score.toFixed(1)}%</span>
+                          <span className="text-xs text-blue-300 ml-2">{score.toFixed(1)}</span>
                         </div>
                       </div>
                     ))}
