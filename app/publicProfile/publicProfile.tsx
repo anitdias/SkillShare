@@ -87,7 +87,7 @@ export default function ProfilePage() {
     }, 0);
   }, [searchParams]);
 
-  const fulltext = "<Skillsikt/>";
+  const fulltext = "<SkillSikt/>";
   
   useEffect(() => {
     if (status == 'unauthenticated') {

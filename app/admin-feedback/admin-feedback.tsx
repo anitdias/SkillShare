@@ -103,7 +103,7 @@ export default function AdminFeedbackPage() {
   
   
 
-  const fulltext = "<Skillsikt/>";
+  const fulltext = "<SkillSikt/>";
 
   useEffect(() => {
     setSearchedUserId('');

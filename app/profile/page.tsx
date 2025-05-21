@@ -101,7 +101,7 @@ export default function ProfilePage() {
     return () => clearTimeout(timer);
   }, []);
 
-  const fulltext = "<Skillsikt/>";
+  const fulltext = "<SkillSikt/>";
   
   useEffect(() => {
     if (status === 'unauthenticated') {

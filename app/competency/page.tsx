@@ -55,7 +55,7 @@ export default function CompetencyPage() {
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  const fulltext = "<Skillsikt/>";
+  const fulltext = "<SkillSikt/>";
 
   useEffect(() => {
     if (status === 'unauthenticated') {

@@ -83,7 +83,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md p-8 space-y-6 bg-[#000000]/90 border-[#3b3b3b] shadow-xl rounded-xl relative z-10">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-white">Join Skillsikt today</p>
+          <p className="text-white">Join SkillSikt today</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
